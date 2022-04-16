@@ -174,7 +174,7 @@
               <span class="post-meta-item-text">发表于</span>
               
 
-              <time title="创建时间：2022-04-16 15:25:09 / 修改时间：22:07:34" itemprop="dateCreated datePublished" datetime="2022-04-16T15:25:09+08:00">2022-04-16</time>
+              <time title="创建时间：2022-04-16 15:25:09 / 修改时间：22:09:30" itemprop="dateCreated datePublished" datetime="2022-04-16T15:25:09+08:00">2022-04-16</time>
             </span>
 
           
@@ -258,7 +258,7 @@
 <p>3、分析全局变量： [004225c4]：G</p>
 <p>4、功能分析：比较X与Y的大小</p>
 <p>如果X&lt;=Y  那么执行</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">004010E6   mov         eax,dword ptr [ebp+0Ch]		//Y				</span><br><span class="line">004010E9   add         eax,dword ptr [ebp-4]		//Y = Y + G			</span><br><span class="line">004010EC   mov         [004225c4],eax				//G = Y</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">004010E6   mov         eax,dword ptr [ebp+0Ch]		//Y				</span><br><span class="line">004010E9   add         eax,dword ptr [ebp-4]		//Y = Y + G			</span><br><span class="line">004010EC   mov         [004225c4],eax			//G = Y</span><br></pre></td></tr></table></figure>
 
 <p>如果X&gt;Y 那么执行</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">004010D8   mov         edx,dword ptr [ebp+8]		//X				</span><br><span class="line">004010DB   add         edx,dword ptr [ebp-4]		//X = X + G					</span><br><span class="line">004010DE   mov         dword ptr [004225c4],edx		//G = X				</span><br><span class="line">004010E4   jmp         004010f1</span><br></pre></td></tr></table></figure>
