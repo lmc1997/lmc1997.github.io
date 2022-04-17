@@ -17,7 +17,7 @@
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
-    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":null},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
   </script>
 
   <meta name="description" content="Windows、逆向、C&#x2F;C++、学习、生活">
@@ -103,6 +103,7 @@
 
   <div class="site-nav-right">
     <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
     </div>
   </div>
 </div>
@@ -124,12 +125,12 @@
   </li>
         <li class="menu-item menu-item-tags">
 
-    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签<span class="badge">0</span></a>
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签<span class="badge">3</span></a>
 
   </li>
         <li class="menu-item menu-item-categories">
 
-    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类<span class="badge">0</span></a>
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类<span class="badge">3</span></a>
 
   </li>
         <li class="menu-item menu-item-archives">
@@ -137,11 +138,38 @@
     <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">2</span></a>
 
   </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
   </ul>
 </nav>
 
 
 
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
 
 </div>
     </header>
@@ -193,8 +221,21 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2022-04-17 09:14:19" itemprop="dateModified" datetime="2022-04-17T09:14:19+08:00">2022-04-17</time>
+                <time title="修改时间：2022-04-17 18:11:49" itemprop="dateModified" datetime="2022-04-17T18:11:49+08:00">2022-04-17</time>
               </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E9%80%86%E5%90%91%E5%88%86%E6%9E%90/" itemprop="url" rel="index"><span itemprop="name">逆向分析</span></a>
+                </span>
+                  ，
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E9%80%86%E5%90%91%E5%88%86%E6%9E%90/C/" itemprop="url" rel="index"><span itemprop="name">C</span></a>
+                </span>
+            </span>
 
           
 
@@ -208,98 +249,14 @@
 
       
           <p>最近学习完了滴水海哥的逆向初级课程，复习一下，做一下记录。</p>
-<h1 id="一、全局变量与局部变量"><a href="#一、全局变量与局部变量" class="headerlink" title="一、全局变量与局部变量"></a>一、全局变量与局部变量</h1><h2 id="全局变量的特点"><a href="#全局变量的特点" class="headerlink" title="全局变量的特点"></a>全局变量的特点</h2><p>1、全局变量在程序编译完成后地址就已经确定下来了，只要程序启动，全局变量就已经存在了。启动后里面是否有值，取决于声明时是否给定了初始值，如果没有，默认是0。</p>
-<p>2、全局变量的值可以被所有函数所修改，里面存储的是最后一次修改的值。</p>
-<p>3、全局变量所占内存会一直存在，直到整个进程结束。</p>
-<p>4、全局变量的反汇编识别：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">MOV 寄存器,byte/word/dword ptr ds:[0x12345678]</span><br></pre></td></tr></table></figure>
-
-<p>通过寄存器的宽度，或者byte&#x2F;word&#x2F;dword 来判断全局变量的宽度。如下图：</p>
-<p><img src="/2022/04/16/%E9%80%86%E5%90%91%E5%88%86%E6%9E%90%EF%BC%9Aif%E8%AF%AD%E5%8F%A5/image-20220416155522649.png"></p>
-<h2 id="局部变量的特点"><a href="#局部变量的特点" class="headerlink" title="局部变量的特点"></a>局部变量的特点</h2><p>1、局部变量在程序编译完成后并没有分配固定的地址。</p>
-<p>2、在所属的方法没有被调用时，局部变量并不会分配内存地址，只有当所属的程序被调用了，才会在堆栈中分配内存。</p>
-<p>3、当局部变量所属的方法执行完毕后，局部变量所占用的内存将变成垃圾数据，局部变量消失。</p>
-<p>4、局部变量只能在方法内部使用，函数A无法使用函数B的局部变量。</p>
-<p>5、局部变量的反汇编识别：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">[ebp-4]</span><br><span class="line">[ebp-8]</span><br><span class="line">[ebp-C]</span><br></pre></td></tr></table></figure>
-
-
-
-<h1 id="二、函数参数分析"><a href="#二、函数参数分析" class="headerlink" title="二、函数参数分析"></a>二、函数参数分析</h1><p>如何判断函数有几个参数，以及分别是什么（一般情况）：</p>
-<p>步骤一：观察调用处的代码</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">push 3</span><br><span class="line">push 2</span><br><span class="line">push 1</span><br><span class="line">call 0040100f</span><br></pre></td></tr></table></figure>
-
-<p>步骤二：找到平衡堆栈的代码继续论证</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">call 0040100f</span><br><span class="line">add esp, 0Ch		//外平栈</span><br></pre></td></tr></table></figure>
-
-<p>或者</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ret 4/8/0xC/0x10	//内平栈</span><br></pre></td></tr></table></figure>
-
-<p>两者综合起来分析即可。例如：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">int</span> g_r;				</span><br><span class="line"><span class="comment">//外平栈，从右至左的顺序压参数入栈								</span></span><br><span class="line"><span class="type">void</span> __cdecl <span class="title function_">Function1</span><span class="params">(<span class="type">int</span> x,<span class="type">int</span> y,<span class="type">int</span> z)</span>					</span><br><span class="line">&#123;				</span><br><span class="line">	g_r = x+y+z;			</span><br><span class="line">&#125;	</span><br><span class="line"><span class="comment">//内平栈，从右至左的顺序压参数入栈</span></span><br><span class="line"><span class="type">void</span> __stdcall <span class="title function_">Function2</span><span class="params">(<span class="type">int</span> x,<span class="type">int</span> y,<span class="type">int</span> z)</span>					</span><br><span class="line">&#123;				</span><br><span class="line">	g_r = x+y+z;			</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//内平栈，头两个DWORD（4字节）类型或者占更少字节的参数被放入寄存器，其他剩下的参数按从右到左的顺序压入栈</span></span><br><span class="line"><span class="comment">//寄存器一般是ECX和EDX</span></span><br><span class="line"><span class="type">void</span> __fastcall <span class="title function_">Function3</span><span class="params">(<span class="type">int</span> x,<span class="type">int</span> y,<span class="type">int</span> z)</span>					</span><br><span class="line">&#123;				</span><br><span class="line">	g_r = x+y+z;			</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-<p><img src="/2022/04/16/%E9%80%86%E5%90%91%E5%88%86%E6%9E%90%EF%BC%9Aif%E8%AF%AD%E5%8F%A5/image-20220416162401815.png"></p>
-<p>但是上面的分析是一般情况，可能出现问题：</p>
-<p>1、参数传递未必都是通过堆栈，还可能通过使用寄存器（比如fastcall调用约定）。</p>
-<p>2、函数调用处的代码无法查看，只能看到函数内部的。</p>
-<p>例如：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">00401050   push        ebp				</span><br><span class="line">00401051   mov         ebp,esp				</span><br><span class="line">00401053   sub         esp,48h				</span><br><span class="line">00401056   push        ebx				</span><br><span class="line">00401057   push        esi				</span><br><span class="line">00401058   push        edi				</span><br><span class="line">00401059   push        ecx				</span><br><span class="line">0040105A   lea         edi,[ebp-48h]				</span><br><span class="line">0040105D   mov         ecx,12h				</span><br><span class="line">00401062   mov         eax,0CCCCCCCCh				</span><br><span class="line">00401067   rep stos    dword ptr [edi]				</span><br><span class="line">00401069   pop         ecx				</span><br><span class="line">0040106A   mov         dword ptr [ebp-8],edx	//注意			</span><br><span class="line">0040106D   mov         dword ptr [ebp-4],ecx	//注意				</span><br><span class="line">00401070   mov         eax,dword ptr [ebp-4]				</span><br><span class="line">00401073   add         eax,dword ptr [ebp-8]				</span><br><span class="line">00401076   add         eax,dword ptr [ebp+8]				</span><br><span class="line">00401079   mov         [g_x (00427958)],eax				</span><br><span class="line">0040107E   pop         edi				</span><br><span class="line">0040107F   pop         esi				</span><br><span class="line">00401080   pop         ebx				</span><br><span class="line">00401081   mov         esp,ebp				</span><br><span class="line">00401083   pop         ebp				</span><br><span class="line">00401084   ret         4				</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-
-<p><strong>分析步骤：</strong></p>
-<p>1、不考虑ebp和esp。</p>
-<p>2、只找<strong>给别人赋值的寄存器</strong>，eax&#x2F;ecx&#x2F;edx&#x2F;ebx&#x2F;esi&#x2F;edi。</p>
-<p>3、找到以后追查其来源，如果，该寄存器中的值不是在函数内存赋值的，那一定是传进来的参数。</p>
-<p>公式一：寄存器 + ret  4 &#x3D; 参数个数</p>
-<p>公式二：寄存器 + [ebp+8] +[ebp+0x] &#x3D; 参数个数</p>
-<h1 id="三、if语句逆向分析"><a href="#三、if语句逆向分析" class="headerlink" title="三、if语句逆向分析"></a>三、if语句逆向分析</h1><p>函数内部代码：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">00401030   push        ebp					</span><br><span class="line">00401031   mov         ebp,esp					</span><br><span class="line">00401033   sub         esp,40h					</span><br><span class="line">00401036   push        ebx					</span><br><span class="line">00401037   push        esi					</span><br><span class="line">00401038   push        edi					</span><br><span class="line">00401039   lea         edi,[ebp-40h]					</span><br><span class="line">0040103C   mov         ecx,10h					</span><br><span class="line">00401041   mov         eax,0CCCCCCCCh	</span><br><span class="line">--------------------------------------------------------------------</span><br><span class="line">00401046   rep stos    dword ptr [edi]					</span><br><span class="line">00401048   mov         eax,dword ptr [ebp+8]					</span><br><span class="line">0040104B   cmp         eax,dword ptr [ebp+0Ch]					</span><br><span class="line">0040104E   jle         00401059					</span><br><span class="line">00401050   mov         ecx,dword ptr [ebp+8]					</span><br><span class="line">00401053   mov         dword ptr [004225c4],ecx	</span><br><span class="line">--------------------------------------------------------------------</span><br><span class="line">00401059   pop         edi					</span><br><span class="line">0040105A   pop         esi					</span><br><span class="line">0040105B   pop         ebx					</span><br><span class="line">0040105C   mov         esp,ebp					</span><br><span class="line">0040105E   pop         ebp					</span><br><span class="line">0040105F   ret					</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-
-<p><strong>函数内部功能分析：</strong></p>
-<p>1、分析参数：[ebp+8]：X		[ebp+0Ch]：Y</p>
-<p>2、分析局部变量：无</p>
-<p>3、分析全局变量：mov   dword ptr [004225c4],ecx</p>
-<p>4、功能分析：将参数X存到EAX中，然后比较EAX与参数Y的大小，如果X&lt;&#x3D;Y 那么跳转到00401059的位置，否则，将X的值存储到全局变量中</p>
-<p>5、返回值分析：无</p>
-<h1 id="四、if…else语句逆向分析"><a href="#四、if…else语句逆向分析" class="headerlink" title="四、if…else语句逆向分析"></a>四、if…else语句逆向分析</h1><p><strong>if…else语句反汇编判断：</strong></p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">IF_BEGIN:</span><br><span class="line">		先执行各类影响标志位的指令</span><br><span class="line">		jxx ELSE_BEGIN</span><br><span class="line">		......</span><br><span class="line">IF_END:</span><br><span class="line">		jmp END</span><br><span class="line">		ELSE_BEGIN：</span><br><span class="line">		......</span><br><span class="line">		ELSE_END：</span><br><span class="line">END：</span><br></pre></td></tr></table></figure>
-
-<p><strong>特点分析：</strong></p>
-<p>1、如果不跳转，那么会执行到jmp处，jmp直接跳转到END处</p>
-<p>2、如果跳转，则会直接跳过jmp END处的代码，直接执行后面的代码</p>
-<p><strong>总结：</strong>第一个jxx跳转的地址前面有一个jmp ,可以判断是if…else…语句</p>
-<p><strong>案例分析：</strong></p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line">004010B0   push        ebp					</span><br><span class="line">004010B1   mov         ebp,esp					</span><br><span class="line">004010B3   sub         esp,44h					</span><br><span class="line">004010B6   push        ebx					</span><br><span class="line">004010B7   push        esi					</span><br><span class="line">004010B8   push        edi					</span><br><span class="line">004010B9   lea         edi,[ebp-44h]					</span><br><span class="line">004010BC   mov         ecx,11h					</span><br><span class="line">004010C1   mov         eax,0CCCCCCCCh					</span><br><span class="line">004010C6   rep stos    dword ptr [edi]	</span><br><span class="line">-----------------------------------------------------------</span><br><span class="line">004010C8   mov         eax,[004225c4]					</span><br><span class="line">004010CD   mov         dword ptr [ebp-4],eax					</span><br><span class="line">004010D0   mov         ecx,dword ptr [ebp+8]					</span><br><span class="line">004010D3   cmp         ecx,dword ptr [ebp+0Ch]					</span><br><span class="line">004010D6   jle         004010e6					</span><br><span class="line">004010D8   mov         edx,dword ptr [ebp+8]					</span><br><span class="line">004010DB   add         edx,dword ptr [ebp-4]					</span><br><span class="line">004010DE   mov         dword ptr [004225c4],edx					</span><br><span class="line">004010E4   jmp         004010f1	</span><br><span class="line">-----------------------------------------------------------</span><br><span class="line">004010E6   mov         eax,dword ptr [ebp+0Ch]					</span><br><span class="line">004010E9   add         eax,dword ptr [ebp-4]					</span><br><span class="line">004010EC   mov         [004225c4],eax	</span><br><span class="line">-----------------------------------------------------------</span><br><span class="line">004010F1   pop         edi					</span><br><span class="line">004010F2   pop         esi					</span><br><span class="line">004010F3   pop         ebx					</span><br><span class="line">004010F4   mov         esp,ebp					</span><br><span class="line">004010F6   pop         ebp					</span><br><span class="line">004010F7   ret					</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-
-<p><strong>函数内部功能分析：</strong></p>
-<p>1、分析参数：[ebp+8]：X		[ebp+0Ch]：Y</p>
-<p>2、分析局部变量：[ebp-4] &#x3D; eax &#x3D; [004225c4]</p>
-<p>3、分析全局变量： [004225c4]：G</p>
-<p>4、功能分析：比较X与Y的大小</p>
-<p>如果X&lt;&#x3D;Y  那么执行</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">004010E6   mov         eax,dword ptr [ebp+0Ch]		//Y				</span><br><span class="line">004010E9   add         eax,dword ptr [ebp-4]		//Y = Y + G			</span><br><span class="line">004010EC   mov         [004225c4],eax			//G = Y</span><br></pre></td></tr></table></figure>
-
-<p>如果X&gt;Y 那么执行</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">004010D8   mov         edx,dword ptr [ebp+8]		//X				</span><br><span class="line">004010DB   add         edx,dword ptr [ebp-4]		//X = X + G					</span><br><span class="line">004010DE   mov         dword ptr [004225c4],edx		//G = X				</span><br><span class="line">004010E4   jmp         004010f1</span><br></pre></td></tr></table></figure>
-
-<p>5、返回值分析：无</p>
-<h1 id="五、if…else-if…else语句逆向分析"><a href="#五、if…else-if…else语句逆向分析" class="headerlink" title="五、if…else if…else语句逆向分析"></a>五、if…else if…else语句逆向分析</h1><p><strong>IF…ELSE IF…ELSE IF..多分支语句的反汇编判断：</strong></p>
-<p><img src="/2022/04/16/%E9%80%86%E5%90%91%E5%88%86%E6%9E%90%EF%BC%9Aif%E8%AF%AD%E5%8F%A5/image-20220416212606777.png"></p>
-<p><strong>分析：</strong></p>
-<p>1、当每个条件跳转指令要跳转的地址前面都有jmp 指令</p>
-<p>2、这些jmp指令跳转的地址都是一样的</p>
-<p>3、如果某个分支没有条件判断，则为else部分</p>
-<p><strong>案例分析：</strong></p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line">004010B0   push        ebp					</span><br><span class="line">004010B1   mov         ebp,esp					</span><br><span class="line">004010B3   sub         esp,4Ch					</span><br><span class="line">004010B6   push        ebx					</span><br><span class="line">004010B7   push        esi					</span><br><span class="line">004010B8   push        edi					</span><br><span class="line">004010B9   lea         edi,[ebp-4Ch]					</span><br><span class="line">004010BC   mov         ecx,13h					</span><br><span class="line">004010C1   mov         eax,0CCCCCCCCh					</span><br><span class="line">004010C6   rep stos    dword ptr [edi]	</span><br><span class="line">--------------------------------------------------------</span><br><span class="line">004010C8   mov         dword ptr [ebp-4],0					</span><br><span class="line">004010CF   mov         dword ptr [ebp-8],1					</span><br><span class="line">004010D6   mov         dword ptr [ebp-0Ch],2					</span><br><span class="line">004010DD   mov         eax,dword ptr [ebp+8]					</span><br><span class="line">004010E0   cmp         eax,dword ptr [ebp+0Ch]					</span><br><span class="line">004010E3   jle         004010f0					</span><br><span class="line">004010E5   mov         ecx,dword ptr [ebp-8]					</span><br><span class="line">004010E8   add         ecx,1					</span><br><span class="line">004010EB   mov         dword ptr [ebp-4],ecx					</span><br><span class="line">004010EE   jmp         00401123						//jmp 00401123</span><br><span class="line">-----------------------------------------------------------</span><br><span class="line">004010F0   mov         edx,dword ptr [ebp+8]					</span><br><span class="line">004010F3   cmp         edx,dword ptr [ebp+10h]					</span><br><span class="line">004010F6   jle         00401103					</span><br><span class="line">004010F8   mov         eax,dword ptr [ebp-0Ch]					</span><br><span class="line">004010FB   add         eax,1					</span><br><span class="line">004010FE   mov         dword ptr [ebp-4],eax					</span><br><span class="line">00401101   jmp         00401123						//jmp 00401123</span><br><span class="line">-----------------------------------------------------------</span><br><span class="line">00401103   mov         ecx,dword ptr [ebp+0Ch]					</span><br><span class="line">00401106   cmp         ecx,dword ptr [ebp+10h]					</span><br><span class="line">00401109   jle         00401116					</span><br><span class="line">0040110B   mov         edx,dword ptr [ebp-8]					</span><br><span class="line">0040110E   add         edx,dword ptr [ebp-0Ch]					</span><br><span class="line">00401111   mov         dword ptr [ebp-4],edx					</span><br><span class="line">00401114   jmp         00401123						//jmp 00401123</span><br><span class="line">-----------------------------------------------------------</span><br><span class="line">00401116   mov         eax,dword ptr [ebp-0Ch]					</span><br><span class="line">00401119   mov         ecx,dword ptr [ebp-8]					</span><br><span class="line">0040111C   lea         edx,[ecx+eax+1]					</span><br><span class="line">00401120   mov         dword ptr [ebp-4],edx	</span><br><span class="line">-----------------------------------------------------------</span><br><span class="line">00401123   mov         eax,dword ptr [ebp-4]					</span><br><span class="line">00401126   pop         edi					</span><br><span class="line">00401127   pop         esi					</span><br><span class="line">00401128   pop         ebx					</span><br><span class="line">00401129   mov         esp,ebp					</span><br><span class="line">0040112B   pop         ebp					</span><br><span class="line">0040112C   ret					</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-
-<p><strong>函数内部功能分析：</strong></p>
-<p>1、分析参数：[ebp+8]：X		[ebp+0Ch]：Y		[ebp-0Ch]：Z</p>
-<p>2、分析局部变量：[ebp-4] &#x3D; A &#x3D; 0		[ebp-8] &#x3D; B &#x3D; 1		[ebp-0C] &#x3D; C &#x3D; 2</p>
-<p>3、分析全局变量：无</p>
-<p>4、功能分析：</p>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span>(x &gt; y)		</span><br><span class="line">&#123;		</span><br><span class="line">    A = B + <span class="number">1</span>;		</span><br><span class="line">&#125;		</span><br><span class="line"><span class="keyword">else</span> <span class="keyword">if</span>(x &gt; z)		</span><br><span class="line">&#123;		</span><br><span class="line">    A = C + <span class="number">1</span>;		</span><br><span class="line">&#125;		</span><br><span class="line"><span class="keyword">else</span> <span class="keyword">if</span>(x &gt; z)		</span><br><span class="line">&#123;		</span><br><span class="line">    A = B + C		</span><br><span class="line">&#125;		</span><br><span class="line"><span class="keyword">else</span>		</span><br><span class="line">&#123;		</span><br><span class="line">    A = B + C + <span class="number">1</span>;		</span><br><span class="line">&#125;		</span><br><span class="line"><span class="keyword">return</span> A;		</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-
-<p><em>注意函数返回值的写法，以eax传出。</em></p>
-
+          <!--noindex-->
+            <div class="post-button">
+              <a class="btn" href="/2022/04/16/%E9%80%86%E5%90%91%E5%88%86%E6%9E%90%EF%BC%9Aif%E8%AF%AD%E5%8F%A5/#more" rel="contents">
+                阅读全文 &raquo;
+              </a>
+            </div>
+          <!--/noindex-->
+        
       
     </div>
 
@@ -341,9 +298,24 @@
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
-              
 
-              <time title="创建时间：2022-04-14 14:57:01 / 修改时间：14:58:36" itemprop="dateCreated datePublished" datetime="2022-04-14T14:57:01+08:00">2022-04-14</time>
+              <time title="创建时间：2022-04-14 14:57:01" itemprop="dateCreated datePublished" datetime="2022-04-14T14:57:01+08:00">2022-04-14</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-04-17 18:10:10" itemprop="dateModified" datetime="2022-04-17T18:10:10+08:00">2022-04-17</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E7%94%9F%E6%B4%BB/" itemprop="url" rel="index"><span itemprop="name">生活</span></a>
+                </span>
             </span>
 
           
@@ -357,7 +329,9 @@
     <div class="post-body" itemprop="articleBody">
 
       
-          <p>赵月凡么么哒</p>
+          <span id="more"></span>
+
+<p>赵月凡么么哒</p>
 
       
     </div>
@@ -445,6 +419,18 @@
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
   </nav>
 </div>
   <div class="links-of-author motion-element">
@@ -527,6 +513,10 @@
   
 
 
+
+
+  
+<script src="/js/local-search.js"></script>
 
 
 
