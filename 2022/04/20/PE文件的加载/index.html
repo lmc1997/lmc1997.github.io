@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/16x16.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":null},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.json"};
+  </script>
+
+  <meta name="description" content="PE文件是Windows操作系统下使用的32位可执行文件格式。关于PE文件的结构以及各字段的意义，网络上有很详细的资料，这里不再赘述(或者用到的时候再说明)。本版块主要涉及Windows下的一些小应用。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="PE文件的加载">
+<meta property="og:url" content="http://example.com/2022/04/20/PE%E6%96%87%E4%BB%B6%E7%9A%84%E5%8A%A0%E8%BD%BD/index.html">
+<meta property="og:site_name" content="刘小白的博客">
+<meta property="og:description" content="PE文件是Windows操作系统下使用的32位可执行文件格式。关于PE文件的结构以及各字段的意义，网络上有很详细的资料，这里不再赘述(或者用到的时候再说明)。本版块主要涉及Windows下的一些小应用。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/2022/04/20/PE%E6%96%87%E4%BB%B6%E7%9A%84%E5%8A%A0%E8%BD%BD/1.PNG">
+<meta property="og:image" content="http://example.com/2022/04/20/PE%E6%96%87%E4%BB%B6%E7%9A%84%E5%8A%A0%E8%BD%BD/2.PNG">
+<meta property="og:image" content="http://example.com/2022/04/20/PE%E6%96%87%E4%BB%B6%E7%9A%84%E5%8A%A0%E8%BD%BD/3.PNG">
+<meta property="article:published_time" content="2022-04-20T05:27:41.000Z">
+<meta property="article:modified_time" content="2022-04-22T07:33:43.848Z">
+<meta property="article:author" content="刘小白">
+<meta property="article:tag" content="Windows">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/2022/04/20/PE%E6%96%87%E4%BB%B6%E7%9A%84%E5%8A%A0%E8%BD%BD/1.PNG">
+
+<link rel="canonical" href="http://example.com/2022/04/20/PE%E6%96%87%E4%BB%B6%E7%9A%84%E5%8A%A0%E8%BD%BD/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>PE文件的加载 | 刘小白的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="刘小白的博客" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">刘小白的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">爱生活爱技术爱女盆友</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签<span class="badge">4</span></a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类<span class="badge">3</span></a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">7</span></a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+
+  <a href="https://github.com/lmc1997" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2022/04/20/PE%E6%96%87%E4%BB%B6%E7%9A%84%E5%8A%A0%E8%BD%BD/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/me.jpg">
+      <meta itemprop="name" content="刘小白">
+      <meta itemprop="description" content="Windows、逆向、C/C++、学习、生活">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="刘小白的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          PE文件的加载
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-04-20 13:27:41" itemprop="dateCreated datePublished" datetime="2022-04-20T13:27:41+08:00">2022-04-20</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-04-22 15:33:43" itemprop="dateModified" datetime="2022-04-22T15:33:43+08:00">2022-04-22</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Windows/" itemprop="url" rel="index"><span itemprop="name">Windows</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>PE文件是Windows操作系统下使用的32位可执行文件格式。关于PE文件的结构以及各字段的意义，网络上有很详细的资料，这里不再赘述(或者用到的时候再说明)。本版块主要涉及Windows下的一些小应用。</p>
+<span id="more"></span>
+
+<h1 id="PE文件的加载过程"><a href="#PE文件的加载过程" class="headerlink" title="PE文件的加载过程"></a>PE文件的加载过程</h1><p>首先要知道，PE文件有在磁盘上与在内存中的两种状态。如下图所示</p>
+<p><img src="/2022/04/20/PE%E6%96%87%E4%BB%B6%E7%9A%84%E5%8A%A0%E8%BD%BD/1.PNG"></p>
+<p>可以看到，这两种状态大体的结构布局是一致的，但是占用的内存大小是不同的，而且两者对齐的大小<strong>有可能</strong>不同。说是有可能，是因为PE文件在磁盘上的对齐方式为FileAlignment，其值可能为0x200h或者0x1000h，而在内存中的对齐方式为SectionAlignment，其值一般为0x1000h。</p>
+<p>Windows系统将PE文件从磁盘读入内存并执行的过程中，就存在上面的这个“拉伸”的过程。DOS头和NT头以及块表位置与大小不变，剩下的各个节按照对齐方式对齐。现在可以将PE文件的加载过程总结如下：</p>
+<p>1、将文件从磁盘读取并拷贝到内存中，这时内存中的布局与在磁盘上的布局是一样的，拷贝在内存中的地址我们一般称为FileBuffer。</p>
+<p>2、根据SizeOfImage的大小，开辟一块缓冲区，将来“拉伸”后的内容就会放到这里面，这个地址我们一般称为ImageBuffer。这块内存会被放入4GB大小的进程空间中。</p>
+<p>3、根据SizeOfHeader的大小，将头信息从FileBuffer拷贝到ImageBuffer。</p>
+<p>4、根据节表中的信息循环将FileBuffer中的节拷贝到ImageBuffer中。</p>
+<p><img src="/2022/04/20/PE%E6%96%87%E4%BB%B6%E7%9A%84%E5%8A%A0%E8%BD%BD/2.PNG"></p>
+<p>在“拉伸”完毕后，程序还不能跑起来，Windows系统还需要做一些收尾的工作才能运行。后续我们会通过代码来模拟这一过程。</p>
+<h1 id="PE文件拉伸与还原的实现"><a href="#PE文件拉伸与还原的实现" class="headerlink" title="PE文件拉伸与还原的实现"></a>PE文件拉伸与还原的实现</h1><p>前面提到过，一个PE文件从磁盘被读入并拉伸后，还不能立即运行起来。现在我们要实现这样的功能，将PE文件读入内存并拉伸，然后再将拉伸后的内容还原回原来的PE文件并存盘，该文件是可以双击运行的。如图：</p>
+<p><img src="/2022/04/20/PE%E6%96%87%E4%BB%B6%E7%9A%84%E5%8A%A0%E8%BD%BD/3.PNG"></p>
+<p>各个模块实现代码如下(PE的各结构定义这里不再赘述)</p>
+<p><strong>1、将文件读入内存，并返回FileBuffer</strong></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">char</span>* <span class="title function_">Read_exe</span><span class="params">()</span></span><br><span class="line">&#123;</span><br><span class="line">	FILE* fp = <span class="literal">NULL</span>;</span><br><span class="line">	<span class="type">int</span> size = <span class="number">0</span>;</span><br><span class="line">	fp = fopen(<span class="string">&quot;C:\\Windows\\System32\\notepad.exe&quot;</span>,<span class="string">&quot;rb&quot;</span>);	<span class="comment">//这里存放要读取的PE文件</span></span><br><span class="line">    </span><br><span class="line">	<span class="keyword">if</span>(!fp)</span><br><span class="line">	&#123;</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">&quot;无法打开 EXE 文件!\n&quot;</span>);</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	size = getlength(fp);</span><br><span class="line"></span><br><span class="line">	<span class="type">char</span>* FileBuffer = (<span class="type">char</span>*)<span class="built_in">malloc</span>(size);</span><br><span class="line">	<span class="keyword">if</span>(FileBuffer != <span class="literal">NULL</span>)</span><br><span class="line">	&#123;</span><br><span class="line">		fread(FileBuffer, size, <span class="number">1</span>, fp);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">else</span></span><br><span class="line">	&#123;</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">&quot;Wrong!\n&quot;</span>);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	fclose(fp);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> FileBuffer;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//获取文件的大小</span></span><br><span class="line"><span class="type">int</span> <span class="title function_">getlength</span><span class="params">(FILE* fp)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="type">int</span> size = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">	fseek(fp, <span class="number">0</span>, SEEK_END);</span><br><span class="line">	size = ftell(fp);</span><br><span class="line">	fseek(fp, <span class="number">0</span>, SEEK_SET);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> size;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>2、将读入内存的文件拉伸，并返回ImageBuffer</strong></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">char</span>* <span class="title function_">file_to_image</span><span class="params">()</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="comment">/* 完成初始化工作 */</span></span><br><span class="line">	<span class="type">char</span>* FileBuffer = Read_exe();</span><br><span class="line">	dos_header* pdh = (dos_header*)FileBuffer;</span><br><span class="line">	pe_header* pph = (pe_header*)(pdh-&gt;e_lfanew +<span class="number">4</span> + (<span class="type">int</span>)pdh);</span><br><span class="line">	optional_pe_header* poph = (optional_pe_header*)((<span class="type">int</span>)(pdh-&gt;e_lfanew) + <span class="number">4</span> + <span class="number">20</span> + (<span class="type">int</span>)pdh);</span><br><span class="line">	<span class="type">int</span> SizeOfImage = (<span class="type">int</span>)poph-&gt;SizeOfImage;</span><br><span class="line">	<span class="type">char</span>* ImageBuffer = (<span class="type">char</span>*)<span class="built_in">malloc</span>(SizeOfImage);</span><br><span class="line">	<span class="built_in">memset</span>(ImageBuffer, <span class="number">0</span>, SizeOfImage);</span><br><span class="line"></span><br><span class="line">	<span class="type">int</span> size_part1 = <span class="number">0</span>;								<span class="comment">//计算头与节表的大小之和</span></span><br><span class="line">	size_part1 = ((image_section_header*)(pph-&gt;SizeOfOptionalHeader + (<span class="type">int</span>)poph))-&gt;PointerToRawData;</span><br><span class="line"></span><br><span class="line">	<span class="built_in">memcpy</span>(ImageBuffer, FileBuffer, size_part1);    <span class="comment">//将文件头与节表复制到imagebuffer中</span></span><br><span class="line"></span><br><span class="line">	<span class="type">int</span> numofsections = (<span class="type">int</span>)(pph-&gt;NumberOfSection);</span><br><span class="line">	image_section_header* pish = (image_section_header*)(pph-&gt;SizeOfOptionalHeader + (<span class="type">int</span>)poph);</span><br><span class="line">	<span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>; i &lt; numofsections; i++)          <span class="comment">//循环将每个节复制到imagebuffer中</span></span><br><span class="line">	&#123;</span><br><span class="line">		<span class="type">char</span>* des = (<span class="type">char</span>*)((<span class="type">int</span>)ImageBuffer + pish-&gt;VirtualAddress);</span><br><span class="line">		<span class="type">char</span>* src = (<span class="type">char</span>*)((<span class="type">int</span>)FileBuffer + pish-&gt;PointerToRawData);</span><br><span class="line">		<span class="type">int</span> size = (<span class="type">int</span>)(pish-&gt;SizeOfRawData);</span><br><span class="line">		<span class="built_in">memcpy</span>(des, src, size);</span><br><span class="line">		pish++;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> ImageBuffer;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>3、将拉伸后的内容还原为原来的PE文件，并存盘</strong></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">char</span>*  <span class="title function_">image_to_file</span><span class="params">(<span class="type">char</span>* ImageBuffer)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="comment">/* 完成初始化工作 */</span></span><br><span class="line">	<span class="comment">//char* ImageBuffer = file_to_image();</span></span><br><span class="line">	dos_header* pdh = (dos_header*)ImageBuffer;</span><br><span class="line">	pe_header* pph = (pe_header*)(pdh-&gt;e_lfanew + <span class="number">4</span> + (<span class="type">int</span>)pdh);</span><br><span class="line">	optional_pe_header* poph = (optional_pe_header*)((<span class="type">int</span>)(pdh-&gt;e_lfanew) + <span class="number">4</span> + <span class="number">20</span> + (<span class="type">int</span>)pdh);</span><br><span class="line">	image_section_header* pish = (image_section_header*)(pph-&gt;SizeOfOptionalHeader + (<span class="type">int</span>)poph);</span><br><span class="line">	<span class="type">int</span> size = <span class="number">0</span>;</span><br><span class="line">	size = (<span class="type">int</span>)((pish + pph-&gt;NumberOfSection - <span class="number">1</span>)-&gt;PointerToRawData) + (<span class="type">int</span>)((pish + pph-&gt;NumberOfSection - <span class="number">1</span>)-&gt;SizeOfRawData);</span><br><span class="line">	<span class="type">char</span>* NewBuffer = (<span class="type">char</span>*)<span class="built_in">malloc</span>(size);</span><br><span class="line">	<span class="built_in">memset</span>(NewBuffer, <span class="number">0</span>, size);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* 计算头与节表的大小之和,将文件头与节表复制到newbuffer中 */</span></span><br><span class="line">	<span class="type">int</span> size_part1 = <span class="number">0</span>;</span><br><span class="line">	size_part1 = (<span class="type">int</span>)pish-&gt;VirtualAddress;</span><br><span class="line">	<span class="built_in">memcpy</span>(NewBuffer, ImageBuffer, size_part1);		<span class="comment">//将文件头与节表复制到Newbuffer中</span></span><br><span class="line"></span><br><span class="line">	<span class="type">int</span> numofsections = (<span class="type">int</span>)(pph-&gt;NumberOfSection);</span><br><span class="line">	<span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>; i &lt; numofsections; i++)			<span class="comment">//循环将每个节复制到Newbuffer中</span></span><br><span class="line">	&#123;</span><br><span class="line">		<span class="type">char</span>* des = (<span class="type">char</span>*)((<span class="type">int</span>)NewBuffer + pish-&gt;PointerToRawData);</span><br><span class="line">		<span class="type">char</span>* src = (<span class="type">char</span>*)((<span class="type">int</span>)ImageBuffer + pish-&gt;VirtualAddress);</span><br><span class="line">		<span class="type">int</span> size = (<span class="type">int</span>)(pish-&gt;SizeOfRawData);</span><br><span class="line">		<span class="built_in">memcpy</span>(des, src, size);</span><br><span class="line">		pish++;</span><br><span class="line">	&#125;	</span><br><span class="line">	<span class="comment">//存盘</span></span><br><span class="line">	FILE* pfp = fopen(<span class="string">&quot;C:\\Documents and Settings\\easy\\桌面\\test.exe&quot;</span>, <span class="string">&quot;wb&quot;</span>);</span><br><span class="line">	fwrite(NewBuffer, size, <span class="number">1</span>, pfp);</span><br><span class="line">	</span><br><span class="line">	<span class="keyword">return</span> NewBuffer;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>经测试，还原后的文件可以正常运行。</p>
+<h1 id="RVA与FOA转化的实现"><a href="#RVA与FOA转化的实现" class="headerlink" title="RVA与FOA转化的实现"></a>RVA与FOA转化的实现</h1><p>不论是在以后分析PE文件，还是做其他相关的事情，RVA(内存中的偏移)和FOA(文件中的偏移)之间的相互转换都是很重要的。转换大体思路就是先判断该地址是位于PE头还是节中，若是在PE头中，则地址不变，若是在节中，则要找出该地址位于哪个节，然后计算差值即可。</p>
+<p><strong>RVA转换为FOA</strong></p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">char</span>* <span class="title">RVA_TO_FOA</span><span class="params">(<span class="type">char</span>* RVA)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="type">char</span>* FileBuffer = <span class="built_in">Read_exe</span>();</span><br><span class="line">	<span class="type">char</span>* ImageBuffer = <span class="built_in">file_to_image</span>();</span><br><span class="line"></span><br><span class="line">	dos_header* pdh = (dos_header*)FileBuffer;</span><br><span class="line">	pe_header* pph = (pe_header*)(pdh-&gt;e_lfanew + <span class="number">4</span> + (<span class="type">int</span>)pdh);</span><br><span class="line">	optional_pe_header* poph = (optional_pe_header*)((<span class="type">int</span>)(pdh-&gt;e_lfanew) + <span class="number">4</span> + <span class="number">20</span> + (<span class="type">int</span>)pdh);</span><br><span class="line">	image_section_header* pish = (image_section_header*)(pph-&gt;SizeOfOptionalHeader + (<span class="type">int</span>)poph);</span><br><span class="line">    	<span class="comment">//如果该地址在头中，则不变</span></span><br><span class="line">    <span class="keyword">if</span>((<span class="type">int</span>)RVA &lt;= poph-&gt;SizeOfHeaders)</span><br><span class="line">	&#123;</span><br><span class="line">		<span class="keyword">return</span> RVA;</span><br><span class="line">	&#125;</span><br><span class="line">    	<span class="comment">//如果该地址在节中</span></span><br><span class="line">	<span class="keyword">else</span></span><br><span class="line">	&#123;</span><br><span class="line">		<span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>; i &lt; pph-&gt;NumberOfSection; i++)</span><br><span class="line">		&#123;</span><br><span class="line">            	<span class="comment">//找出RVA位于哪个节</span></span><br><span class="line">			<span class="keyword">if</span>((<span class="type">int</span>)RVA &gt;= (pish-&gt;VirtualAddress) &amp;&amp; (<span class="type">int</span>)RVA &lt; (pish-&gt;VirtualAddress + pish-&gt;Misc.VirtualAddress))</span><br><span class="line">			&#123;</span><br><span class="line">                <span class="comment">//加上差值即可</span></span><br><span class="line">				<span class="built_in">return</span> (RVA - pish-&gt;VirtualAddress) + pish-&gt;PointerToRawData;</span><br><span class="line">			&#125;</span><br><span class="line">			pish++;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>FOA转换为RVA代码基本一致，只是反过来而已。需要注意的是在ImageBuffer中，判断位于哪个节的依据是VirtualAddress+Misc，而在FileBuffer中判断的依据是PointerToRawData+SizeOfRawData。</p>
+
+    </div>
+
+    
+    
+    
+
+<div>
+  
+    <div>
+    
+        <div style="text-align:center;color: #ccc;font-size:14px;">-------------已经读到底啦 <i class="fa fa-shower"></i> 感谢阅读哦~-------------</div>
+    
+</div>
+
+  
+</div>
+        <div class="reward-container">
+  <div>不赌天意，不猜人心.</div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="/images/wechatpay.jpg" alt="刘小白 微信支付">
+        <p>微信支付</p>
+      </div>
+      
+      <div style="display: inline-block;">
+        <img src="/images/alipay.jpg" alt="刘小白 支付宝">
+        <p>支付宝</p>
+      </div>
+
+  </div>
+</div>
+
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>刘小白
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="http://example.com/2022/04/20/PE%E6%96%87%E4%BB%B6%E7%9A%84%E5%8A%A0%E8%BD%BD/" title="PE文件的加载">http://example.com/2022/04/20/PE文件的加载/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Windows/" rel="tag"><i class="fa fa-tag"></i>
+		Windows</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/04/19/%E9%80%86%E5%90%91%E5%88%86%E6%9E%90%EF%BC%9Aswitch%E8%AF%AD%E5%8F%A5/" rel="prev" title="逆向分析：switch语句">
+      <i class="fa fa-chevron-left"></i> 逆向分析：switch语句
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#PE%E6%96%87%E4%BB%B6%E7%9A%84%E5%8A%A0%E8%BD%BD%E8%BF%87%E7%A8%8B"><span class="nav-number">1.</span> <span class="nav-text">PE文件的加载过程</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#PE%E6%96%87%E4%BB%B6%E6%8B%89%E4%BC%B8%E4%B8%8E%E8%BF%98%E5%8E%9F%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="nav-number">2.</span> <span class="nav-text">PE文件拉伸与还原的实现</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#RVA%E4%B8%8EFOA%E8%BD%AC%E5%8C%96%E7%9A%84%E5%AE%9E%E7%8E%B0"><span class="nav-number">3.</span> <span class="nav-text">RVA与FOA转化的实现</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="刘小白"
+      src="/images/me.jpg">
+  <p class="site-author-name" itemprop="name">刘小白</p>
+  <div class="site-description" itemprop="description">Windows、逆向、C/C++、学习、生活</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">7</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">4</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="">
+    <a target="_blank" class="social-link" href="/atom.xml" style="color: burlywood;">
+      <span class="icon">
+        <i class="fa fa-rss"></i>
+      </span>
+      <span class="label">RSS</span>
+    </a>
+  </div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="mailto:1716281594@qq.com" title="E-Mail → mailto:1716281594@qq.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://github.com/lmc1997" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;lmc1997" rel="noopener" target="_blank"><i class="fa fa-star fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">刘小白</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  
+  <script color='0,0,0' opacity='0.5' zIndex='-1' count='150' src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"model":{"jsonPath":"/live2dw/assets/wanko.model.json"},"display":{"position":"right","width":150,"height":300},"mobile":{"show":true},"log":false});</script></body>
+</html>
+<!-- 页面点击小红心 -->
+<script type="text/javascript" src="/js/src/clicklove.js"></script>
+
