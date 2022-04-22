@@ -22,22 +22,22 @@
 
   <meta name="description" content="PE文件是Windows操作系统下使用的32位可执行文件格式。关于PE文件的结构以及各字段的意义，网络上有很详细的资料，这里不再赘述(或者用到的时候再说明)。本版块主要涉及Windows下的一些小应用。">
 <meta property="og:type" content="article">
-<meta property="og:title" content="PE文件的加载">
-<meta property="og:url" content="http://example.com/2022/04/20/PE%E6%96%87%E4%BB%B6%E7%9A%84%E5%8A%A0%E8%BD%BD/index.html">
+<meta property="og:title" content="PE研究：PE文件的加载">
+<meta property="og:url" content="http://example.com/2022/04/20/PE%E7%A0%94%E7%A9%B6%EF%BC%9APE%E6%96%87%E4%BB%B6%E7%9A%84%E5%8A%A0%E8%BD%BD/index.html">
 <meta property="og:site_name" content="刘小白的博客">
 <meta property="og:description" content="PE文件是Windows操作系统下使用的32位可执行文件格式。关于PE文件的结构以及各字段的意义，网络上有很详细的资料，这里不再赘述(或者用到的时候再说明)。本版块主要涉及Windows下的一些小应用。">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="http://example.com/2022/04/20/PE%E6%96%87%E4%BB%B6%E7%9A%84%E5%8A%A0%E8%BD%BD/1.PNG">
-<meta property="og:image" content="http://example.com/2022/04/20/PE%E6%96%87%E4%BB%B6%E7%9A%84%E5%8A%A0%E8%BD%BD/2.PNG">
-<meta property="og:image" content="http://example.com/2022/04/20/PE%E6%96%87%E4%BB%B6%E7%9A%84%E5%8A%A0%E8%BD%BD/3.PNG">
+<meta property="og:image" content="http://example.com/2022/04/20/PE%E7%A0%94%E7%A9%B6%EF%BC%9APE%E6%96%87%E4%BB%B6%E7%9A%84%E5%8A%A0%E8%BD%BD/1.PNG">
+<meta property="og:image" content="http://example.com/2022/04/20/PE%E7%A0%94%E7%A9%B6%EF%BC%9APE%E6%96%87%E4%BB%B6%E7%9A%84%E5%8A%A0%E8%BD%BD/2.PNG">
+<meta property="og:image" content="http://example.com/2022/04/20/PE%E7%A0%94%E7%A9%B6%EF%BC%9APE%E6%96%87%E4%BB%B6%E7%9A%84%E5%8A%A0%E8%BD%BD/3.PNG">
 <meta property="article:published_time" content="2022-04-20T05:27:41.000Z">
-<meta property="article:modified_time" content="2022-04-22T07:33:43.848Z">
+<meta property="article:modified_time" content="2022-04-22T07:45:27.047Z">
 <meta property="article:author" content="刘小白">
 <meta property="article:tag" content="Windows">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="http://example.com/2022/04/20/PE%E6%96%87%E4%BB%B6%E7%9A%84%E5%8A%A0%E8%BD%BD/1.PNG">
+<meta name="twitter:image" content="http://example.com/2022/04/20/PE%E7%A0%94%E7%A9%B6%EF%BC%9APE%E6%96%87%E4%BB%B6%E7%9A%84%E5%8A%A0%E8%BD%BD/1.PNG">
 
-<link rel="canonical" href="http://example.com/2022/04/20/PE%E6%96%87%E4%BB%B6%E7%9A%84%E5%8A%A0%E8%BD%BD/">
+<link rel="canonical" href="http://example.com/2022/04/20/PE%E7%A0%94%E7%A9%B6%EF%BC%9APE%E6%96%87%E4%BB%B6%E7%9A%84%E5%8A%A0%E8%BD%BD/">
 
 
 <script id="page-configurations">
@@ -50,7 +50,7 @@
   };
 </script>
 
-  <title>PE文件的加载 | 刘小白的博客</title>
+  <title>PE研究：PE文件的加载 | 刘小白的博客</title>
   
 
 
@@ -198,7 +198,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2022/04/20/PE%E6%96%87%E4%BB%B6%E7%9A%84%E5%8A%A0%E8%BD%BD/">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2022/04/20/PE%E7%A0%94%E7%A9%B6%EF%BC%9APE%E6%96%87%E4%BB%B6%E7%9A%84%E5%8A%A0%E8%BD%BD/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/me.jpg">
@@ -211,7 +211,7 @@
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          PE文件的加载
+          PE研究：PE文件的加载
         </h1>
 
         <div class="post-meta">
@@ -228,7 +228,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2022-04-22 15:33:43" itemprop="dateModified" datetime="2022-04-22T15:33:43+08:00">2022-04-22</time>
+                <time title="修改时间：2022-04-22 15:45:27" itemprop="dateModified" datetime="2022-04-22T15:45:27+08:00">2022-04-22</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -255,17 +255,17 @@
 <span id="more"></span>
 
 <h1 id="PE文件的加载过程"><a href="#PE文件的加载过程" class="headerlink" title="PE文件的加载过程"></a>PE文件的加载过程</h1><p>首先要知道，PE文件有在磁盘上与在内存中的两种状态。如下图所示</p>
-<p><img src="/2022/04/20/PE%E6%96%87%E4%BB%B6%E7%9A%84%E5%8A%A0%E8%BD%BD/1.PNG"></p>
+<p><img src="/2022/04/20/PE%E7%A0%94%E7%A9%B6%EF%BC%9APE%E6%96%87%E4%BB%B6%E7%9A%84%E5%8A%A0%E8%BD%BD/1.PNG"></p>
 <p>可以看到，这两种状态大体的结构布局是一致的，但是占用的内存大小是不同的，而且两者对齐的大小<strong>有可能</strong>不同。说是有可能，是因为PE文件在磁盘上的对齐方式为FileAlignment，其值可能为0x200h或者0x1000h，而在内存中的对齐方式为SectionAlignment，其值一般为0x1000h。</p>
 <p>Windows系统将PE文件从磁盘读入内存并执行的过程中，就存在上面的这个“拉伸”的过程。DOS头和NT头以及块表位置与大小不变，剩下的各个节按照对齐方式对齐。现在可以将PE文件的加载过程总结如下：</p>
 <p>1、将文件从磁盘读取并拷贝到内存中，这时内存中的布局与在磁盘上的布局是一样的，拷贝在内存中的地址我们一般称为FileBuffer。</p>
 <p>2、根据SizeOfImage的大小，开辟一块缓冲区，将来“拉伸”后的内容就会放到这里面，这个地址我们一般称为ImageBuffer。这块内存会被放入4GB大小的进程空间中。</p>
 <p>3、根据SizeOfHeader的大小，将头信息从FileBuffer拷贝到ImageBuffer。</p>
 <p>4、根据节表中的信息循环将FileBuffer中的节拷贝到ImageBuffer中。</p>
-<p><img src="/2022/04/20/PE%E6%96%87%E4%BB%B6%E7%9A%84%E5%8A%A0%E8%BD%BD/2.PNG"></p>
+<p><img src="/2022/04/20/PE%E7%A0%94%E7%A9%B6%EF%BC%9APE%E6%96%87%E4%BB%B6%E7%9A%84%E5%8A%A0%E8%BD%BD/2.PNG"></p>
 <p>在“拉伸”完毕后，程序还不能跑起来，Windows系统还需要做一些收尾的工作才能运行。后续我们会通过代码来模拟这一过程。</p>
 <h1 id="PE文件拉伸与还原的实现"><a href="#PE文件拉伸与还原的实现" class="headerlink" title="PE文件拉伸与还原的实现"></a>PE文件拉伸与还原的实现</h1><p>前面提到过，一个PE文件从磁盘被读入并拉伸后，还不能立即运行起来。现在我们要实现这样的功能，将PE文件读入内存并拉伸，然后再将拉伸后的内容还原回原来的PE文件并存盘，该文件是可以双击运行的。如图：</p>
-<p><img src="/2022/04/20/PE%E6%96%87%E4%BB%B6%E7%9A%84%E5%8A%A0%E8%BD%BD/3.PNG"></p>
+<p><img src="/2022/04/20/PE%E7%A0%94%E7%A9%B6%EF%BC%9APE%E6%96%87%E4%BB%B6%E7%9A%84%E5%8A%A0%E8%BD%BD/3.PNG"></p>
 <p>各个模块实现代码如下(PE的各结构定义这里不再赘述)</p>
 <p><strong>1、将文件读入内存，并返回FileBuffer</strong></p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">char</span>* <span class="title function_">Read_exe</span><span class="params">()</span></span><br><span class="line">&#123;</span><br><span class="line">	FILE* fp = <span class="literal">NULL</span>;</span><br><span class="line">	<span class="type">int</span> size = <span class="number">0</span>;</span><br><span class="line">	fp = fopen(<span class="string">&quot;C:\\Windows\\System32\\notepad.exe&quot;</span>,<span class="string">&quot;rb&quot;</span>);	<span class="comment">//这里存放要读取的PE文件</span></span><br><span class="line">    </span><br><span class="line">	<span class="keyword">if</span>(!fp)</span><br><span class="line">	&#123;</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">&quot;无法打开 EXE 文件!\n&quot;</span>);</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	size = getlength(fp);</span><br><span class="line"></span><br><span class="line">	<span class="type">char</span>* FileBuffer = (<span class="type">char</span>*)<span class="built_in">malloc</span>(size);</span><br><span class="line">	<span class="keyword">if</span>(FileBuffer != <span class="literal">NULL</span>)</span><br><span class="line">	&#123;</span><br><span class="line">		fread(FileBuffer, size, <span class="number">1</span>, fp);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">else</span></span><br><span class="line">	&#123;</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">&quot;Wrong!\n&quot;</span>);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	fclose(fp);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> FileBuffer;</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">//获取文件的大小</span></span><br><span class="line"><span class="type">int</span> <span class="title function_">getlength</span><span class="params">(FILE* fp)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="type">int</span> size = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">	fseek(fp, <span class="number">0</span>, SEEK_END);</span><br><span class="line">	size = ftell(fp);</span><br><span class="line">	fseek(fp, <span class="number">0</span>, SEEK_SET);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> size;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
@@ -328,7 +328,7 @@
   </li>
   <li class="post-copyright-link">
     <strong>本文链接：</strong>
-    <a href="http://example.com/2022/04/20/PE%E6%96%87%E4%BB%B6%E7%9A%84%E5%8A%A0%E8%BD%BD/" title="PE文件的加载">http://example.com/2022/04/20/PE文件的加载/</a>
+    <a href="http://example.com/2022/04/20/PE%E7%A0%94%E7%A9%B6%EF%BC%9APE%E6%96%87%E4%BB%B6%E7%9A%84%E5%8A%A0%E8%BD%BD/" title="PE研究：PE文件的加载">http://example.com/2022/04/20/PE研究：PE文件的加载/</a>
   </li>
   <li class="post-copyright-license">
     <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
