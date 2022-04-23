@@ -20,20 +20,23 @@
     var CONFIG = {"hostname":"example.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":null},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.json"};
   </script>
 
-  <meta name="description" content="赵月凡么么哒">
+  <meta name="description" content="代码节是PE结构中的一个节区，一般用于存放代码段。本节来做一个小实验，向代码节的空白区添加代码。实现的功能是，双击运行记事本文件时，先弹出一个对话框，关掉后才能运行记事本程序。">
 <meta property="og:type" content="article">
-<meta property="og:title" content="赵月凡我爱你">
-<meta property="og:url" content="http://example.com/2022/04/14/%E8%B5%B5%E6%9C%88%E5%87%A1%E6%88%91%E7%88%B1%E4%BD%A0/index.html">
+<meta property="og:title" content="PE研究：代码节空白区添加代码">
+<meta property="og:url" content="http://example.com/2022/04/22/PE%E7%A0%94%E7%A9%B6%EF%BC%9A%E4%BB%A3%E7%A0%81%E8%8A%82%E7%A9%BA%E7%99%BD%E5%8C%BA%E6%B7%BB%E5%8A%A0%E4%BB%A3%E7%A0%81/index.html">
 <meta property="og:site_name" content="刘小白的博客">
-<meta property="og:description" content="赵月凡么么哒">
+<meta property="og:description" content="代码节是PE结构中的一个节区，一般用于存放代码段。本节来做一个小实验，向代码节的空白区添加代码。实现的功能是，双击运行记事本文件时，先弹出一个对话框，关掉后才能运行记事本程序。">
 <meta property="og:locale" content="zh_CN">
-<meta property="article:published_time" content="2022-04-14T06:57:01.000Z">
-<meta property="article:modified_time" content="2022-04-17T10:10:10.593Z">
+<meta property="og:image" content="http://example.com/2022/04/22/PE%E7%A0%94%E7%A9%B6%EF%BC%9A%E4%BB%A3%E7%A0%81%E8%8A%82%E7%A9%BA%E7%99%BD%E5%8C%BA%E6%B7%BB%E5%8A%A0%E4%BB%A3%E7%A0%81/1.PNG">
+<meta property="og:image" content="http://example.com/2022/04/22/PE%E7%A0%94%E7%A9%B6%EF%BC%9A%E4%BB%A3%E7%A0%81%E8%8A%82%E7%A9%BA%E7%99%BD%E5%8C%BA%E6%B7%BB%E5%8A%A0%E4%BB%A3%E7%A0%81/2.PNG">
+<meta property="article:published_time" content="2022-04-22T07:49:31.000Z">
+<meta property="article:modified_time" content="2022-04-23T07:17:52.765Z">
 <meta property="article:author" content="刘小白">
-<meta property="article:tag" content="生活">
+<meta property="article:tag" content="Windows">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/2022/04/22/PE%E7%A0%94%E7%A9%B6%EF%BC%9A%E4%BB%A3%E7%A0%81%E8%8A%82%E7%A9%BA%E7%99%BD%E5%8C%BA%E6%B7%BB%E5%8A%A0%E4%BB%A3%E7%A0%81/1.PNG">
 
-<link rel="canonical" href="http://example.com/2022/04/14/%E8%B5%B5%E6%9C%88%E5%87%A1%E6%88%91%E7%88%B1%E4%BD%A0/">
+<link rel="canonical" href="http://example.com/2022/04/22/PE%E7%A0%94%E7%A9%B6%EF%BC%9A%E4%BB%A3%E7%A0%81%E8%8A%82%E7%A9%BA%E7%99%BD%E5%8C%BA%E6%B7%BB%E5%8A%A0%E4%BB%A3%E7%A0%81/">
 
 
 <script id="page-configurations">
@@ -46,7 +49,7 @@
   };
 </script>
 
-  <title>赵月凡我爱你 | 刘小白的博客</title>
+  <title>PE研究：代码节空白区添加代码 | 刘小白的博客</title>
   
 
 
@@ -194,7 +197,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2022/04/14/%E8%B5%B5%E6%9C%88%E5%87%A1%E6%88%91%E7%88%B1%E4%BD%A0/">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2022/04/22/PE%E7%A0%94%E7%A9%B6%EF%BC%9A%E4%BB%A3%E7%A0%81%E8%8A%82%E7%A9%BA%E7%99%BD%E5%8C%BA%E6%B7%BB%E5%8A%A0%E4%BB%A3%E7%A0%81/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/me.jpg">
@@ -207,7 +210,7 @@
     </span>
       <header class="post-header">
         <h1 class="post-title" itemprop="name headline">
-          赵月凡我爱你
+          PE研究：代码节空白区添加代码
         </h1>
 
         <div class="post-meta">
@@ -217,14 +220,14 @@
               </span>
               <span class="post-meta-item-text">发表于</span>
 
-              <time title="创建时间：2022-04-14 14:57:01" itemprop="dateCreated datePublished" datetime="2022-04-14T14:57:01+08:00">2022-04-14</time>
+              <time title="创建时间：2022-04-22 15:49:31" itemprop="dateCreated datePublished" datetime="2022-04-22T15:49:31+08:00">2022-04-22</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2022-04-17 18:10:10" itemprop="dateModified" datetime="2022-04-17T18:10:10+08:00">2022-04-17</time>
+                <time title="修改时间：2022-04-23 15:17:52" itemprop="dateModified" datetime="2022-04-23T15:17:52+08:00">2022-04-23</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -232,7 +235,7 @@
               </span>
               <span class="post-meta-item-text">分类于</span>
                 <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
-                  <a href="/categories/%E7%94%9F%E6%B4%BB/" itemprop="url" rel="index"><span itemprop="name">生活</span></a>
+                  <a href="/categories/Windows/" itemprop="url" rel="index"><span itemprop="name">Windows</span></a>
                 </span>
             </span>
 
@@ -247,9 +250,31 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <span id="more"></span>
+        <p>代码节是PE结构中的一个节区，一般用于存放代码段。本节来做一个小实验，向代码节的空白区添加代码。实现的功能是，双击运行记事本文件时，先弹出一个对话框，关掉后才能运行记事本程序。</p>
+<span id="more"></span>
 
-<p>赵月凡么么哒</p>
+<p>这个实验大致的一种思路可以是，将MessageBox(0, 0, 0, 0)这段代码加入到目标程序中，修改程序的入口点，让它指向我们新加入的这段代码，然后再让程序跳回到原来的入口点执行原来的程序。但是这里有一个问题，就是我们是向已经存在的程序加入代码，不可能直接将MessageBox(0, 0, 0, 0)这个代码直接放进去，而是应该将其转化为<strong>shellcode</strong>二进制代码，再放进去。</p>
+<p>具体步骤如下：</p>
+<p><strong>1、获取MessageBox地址，构造shellcode。</strong></p>
+<p>打开OD，随便拖入一个文件，在命令行中输入bp MessageBoxA，然后打开断点视图，双击到断点处，得到MessageBox的地址。</p>
+<p><img src="/2022/04/22/PE%E7%A0%94%E7%A9%B6%EF%BC%9A%E4%BB%A3%E7%A0%81%E8%8A%82%E7%A9%BA%E7%99%BD%E5%8C%BA%E6%B7%BB%E5%8A%A0%E4%BB%A3%E7%A0%81/1.PNG"></p>
+<p>我这里的地址为77D507EA，不同的机器地址不一样。</p>
+<p>还需要注意的是，在调用MessageBox时，还需要push4个参数，push的硬编码为0x6A。因此我们构造出来的shellcode为</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">char</span> shellcode1[] = </span><br><span class="line">&#123;</span><br><span class="line">	<span class="number">0x6A</span>, <span class="number">0x00</span>, <span class="number">0x6A</span>, <span class="number">0x00</span>,<span class="number">0x6A</span>, <span class="number">0x00</span>, <span class="number">0x6A</span>, <span class="number">0x00</span>,</span><br><span class="line">	<span class="number">0xE8</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>,</span><br><span class="line">	<span class="number">0xE9</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p><strong>2、读取文件，判断代码节(一般都是第一个节)空白区域能否放得下前面的shellcode(这里是18字节)。</strong></p>
+<p><strong>3、将shellcode加入代码节空白区域。</strong></p>
+<p><strong>4、修改E8与E9</strong></p>
+<p>本程序的流程是，通过程序入口(OEP)进入到我们的shellcode，我们的shellcode完成的任务是调用(call)MessageBox函数，然后再跳(jmp)回去。call的硬编码是E8，后面跟了一个地址(4个字节)，jmp的硬编码是E9，后面跟了一个地址(4个字节)。先来研究一下后面跟的地址的计算规则：</p>
+<p><img src="/2022/04/22/PE%E7%A0%94%E7%A9%B6%EF%BC%9A%E4%BB%A3%E7%A0%81%E8%8A%82%E7%A9%BA%E7%99%BD%E5%8C%BA%E6%B7%BB%E5%8A%A0%E4%BB%A3%E7%A0%81/2.PNG"></p>
+<p>公式为：真正要跳转的地址 &#x3D; E8这条指令的下一行地址 + X，而E8指令的长度为5字节。因此，公式可以转化为：要跳转的地方 &#x3D; E8当前的地址 + 5 + X，**X &#x3D; 要跳转的地址 - (E8的地址 + 5)**。E9的公式同理。</p>
+<p><strong>5、修改OEP</strong></p>
+<p><strong>注：如果加在别的节中，还需要修改节属性。</strong></p>
+<p>现在还有一个问题，就是我们加入的shellcode，是加在FileBuffer中呢，还是加在ImageBuffer中呢？答案是ImageBuffer中，因为在shellcode中涉及到地址，这个地址是拉伸后准备运行的地址。当然，如果将shellcode加在FileBuffer中也是可以的，只不过需要多一步，将shellcode中的地址从FOA转换为RVA。</p>
+<p>现在基本没有什么问题了，直接上代码</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">define</span> MessageBoxAddr 0x77D507EA</span></span><br><span class="line"><span class="type">char</span> shellcode1[] = </span><br><span class="line">&#123;</span><br><span class="line">	<span class="number">0x6A</span>, <span class="number">0x00</span>, <span class="number">0x6A</span>, <span class="number">0x00</span>,<span class="number">0x6A</span>, <span class="number">0x00</span>, <span class="number">0x6A</span>, <span class="number">0x00</span>,</span><br><span class="line">	<span class="number">0xE8</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>,</span><br><span class="line">	<span class="number">0xE9</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span></span><br><span class="line">&#125;;</span><br><span class="line"><span class="type">int</span> shellcode_length1 = <span class="number">18</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/* 编程实现在代码节添加MessageBox函数代码，弹出框 */</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">add_shellcode</span><span class="params">(<span class="type">char</span>* ImageBuffer)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="comment">/* 定义各文件头 */</span></span><br><span class="line">	dos_header* pdh = (dos_header*)ImageBuffer;</span><br><span class="line">	pe_header* pph = (pe_header*)(pdh-&gt;e_lfanew + <span class="number">4</span> + (<span class="type">int</span>)pdh);</span><br><span class="line">	optional_pe_header* poph = (optional_pe_header*)((<span class="type">int</span>)(pdh-&gt;e_lfanew) + <span class="number">4</span> + <span class="number">20</span> + (<span class="type">int</span>)pdh);</span><br><span class="line">	image_section_header* pish = (image_section_header*)(pph-&gt;SizeOfOptionalHeader + (<span class="type">int</span>)poph);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* 判断第一个节的空白区域是否大于18字节 */</span></span><br><span class="line">	<span class="keyword">if</span>((((pish+<span class="number">1</span>)-&gt;VirtualAddress) - (pish-&gt;VirtualAddress) - pish-&gt;Misc.VirtualAddress) &lt; <span class="number">18</span>)</span><br><span class="line">	&#123;</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">&quot;无法添加代码!\n&quot;</span>);</span><br><span class="line">		<span class="keyword">return</span>;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* 将shellcode加入代码节空白区域 */</span></span><br><span class="line">    <span class="comment">//注意这里要加ImageBuffer</span></span><br><span class="line">	<span class="built_in">memcpy</span>((<span class="type">char</span>*)(pish-&gt;VirtualAddress + pish-&gt;Misc.VirtualAddress + (<span class="type">int</span>)ImageBuffer), shellcode1, shellcode_length1);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* 修改E8 */</span></span><br><span class="line">    <span class="comment">//E8后面的地址，为MessageBox()地址 - E8下一条语句的地址</span></span><br><span class="line">    <span class="comment">//这个下一条地址应该是对齐后加上imagebase地址，因为程序已经跑起来了</span></span><br><span class="line">	<span class="type">int</span> CallAddr = (<span class="type">int</span>)(MessageBoxAddr - (pish-&gt;VirtualAddress + pish-&gt;Misc.VirtualAddress + <span class="number">13</span> + poph-&gt;ImageBase));</span><br><span class="line">	<span class="type">int</span>* addr1 = (<span class="type">int</span>*)(pish-&gt;VirtualAddress + (<span class="type">int</span>)ImageBuffer + pish-&gt;Misc.VirtualAddress + <span class="number">9</span>);</span><br><span class="line">	*addr1 = CallAddr;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* 修改E9 */</span> </span><br><span class="line">    <span class="comment">//注意都要加上ImageBase</span></span><br><span class="line">	<span class="type">int</span> RetAddr = (<span class="type">int</span>)(poph-&gt;AddressOfEntryPoint + poph-&gt;ImageBase - (pish-&gt;VirtualAddress + pish-&gt;Misc.VirtualAddress + <span class="number">18</span> + poph-&gt;ImageBase));</span><br><span class="line">	<span class="type">int</span>* addr2 = (<span class="type">int</span>*)(pish-&gt;VirtualAddress + (<span class="type">int</span>)ImageBuffer + pish-&gt;Misc.VirtualAddress + <span class="number">14</span>);</span><br><span class="line">	*addr2 = RetAddr;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* 修改OEP */</span></span><br><span class="line">    <span class="comment">//OEP本来存的就是RVA，不需要加ImageBase</span></span><br><span class="line">	<span class="type">int</span> OEP = (<span class="type">int</span>)(pish-&gt;VirtualAddress + pish-&gt;Misc.VirtualAddress);</span><br><span class="line">	poph-&gt;AddressOfEntryPoint = OEP;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>前面提过，这段代码执行前要先拉伸，执行完毕后再还原回去存盘即可。</p>
 
     </div>
 
@@ -296,7 +321,7 @@
   </li>
   <li class="post-copyright-link">
     <strong>本文链接：</strong>
-    <a href="http://example.com/2022/04/14/%E8%B5%B5%E6%9C%88%E5%87%A1%E6%88%91%E7%88%B1%E4%BD%A0/" title="赵月凡我爱你">http://example.com/2022/04/14/赵月凡我爱你/</a>
+    <a href="http://example.com/2022/04/22/PE%E7%A0%94%E7%A9%B6%EF%BC%9A%E4%BB%A3%E7%A0%81%E8%8A%82%E7%A9%BA%E7%99%BD%E5%8C%BA%E6%B7%BB%E5%8A%A0%E4%BB%A3%E7%A0%81/" title="PE研究：代码节空白区添加代码">http://example.com/2022/04/22/PE研究：代码节空白区添加代码/</a>
   </li>
   <li class="post-copyright-license">
     <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
@@ -307,8 +332,8 @@
 
       <footer class="post-footer">
           <div class="post-tags">
-              <a href="/tags/%E7%94%9F%E6%B4%BB/" rel="tag"><i class="fa fa-tag"></i>
-		生活</a>
+              <a href="/tags/Windows/" rel="tag"><i class="fa fa-tag"></i>
+		Windows</a>
           </div>
 
         
@@ -316,11 +341,11 @@
 
         
     <div class="post-nav">
-      <div class="post-nav-item"></div>
       <div class="post-nav-item">
-    <a href="/2022/04/16/%E9%80%86%E5%90%91%E5%88%86%E6%9E%90%EF%BC%9Aif%E8%AF%AD%E5%8F%A5/" rel="next" title="逆向分析：if语句">
-      逆向分析：if语句 <i class="fa fa-chevron-right"></i>
+    <a href="/2022/04/20/PE%E7%A0%94%E7%A9%B6%EF%BC%9APE%E6%96%87%E4%BB%B6%E7%9A%84%E5%8A%A0%E8%BD%BD/" rel="prev" title="PE研究：PE文件的加载">
+      <i class="fa fa-chevron-left"></i> PE研究：PE文件的加载
     </a></div>
+      <div class="post-nav-item"></div>
     </div>
       </footer>
     
