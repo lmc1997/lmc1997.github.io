@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/16x16.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":null},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.json"};
+  </script>
+
+  <meta name="description" content="在学习PE结构的过程中，最重要的能力之一就是对各种表的理解与运用。本章将会对导出表与重定位表的工作原理进行剖析，并给出代码解析这两张表。在我的GitHub中有一个用C和win32写的PE工具项目，里面有完整的源码，实现了对PE文件的解析以及其他功能，需要的可以去我的GitHub查看。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="PE研究：导出表与重定位表">
+<meta property="og:url" content="http://example.com/2022/04/25/PE%E7%A0%94%E7%A9%B6%EF%BC%9A%E5%AF%BC%E5%87%BA%E8%A1%A8%E4%B8%8E%E9%87%8D%E5%AE%9A%E4%BD%8D%E8%A1%A8/index.html">
+<meta property="og:site_name" content="刘小白的博客">
+<meta property="og:description" content="在学习PE结构的过程中，最重要的能力之一就是对各种表的理解与运用。本章将会对导出表与重定位表的工作原理进行剖析，并给出代码解析这两张表。在我的GitHub中有一个用C和win32写的PE工具项目，里面有完整的源码，实现了对PE文件的解析以及其他功能，需要的可以去我的GitHub查看。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/2022/04/25/PE%E7%A0%94%E7%A9%B6%EF%BC%9A%E5%AF%BC%E5%87%BA%E8%A1%A8%E4%B8%8E%E9%87%8D%E5%AE%9A%E4%BD%8D%E8%A1%A8/1.PNG">
+<meta property="og:image" content="http://example.com/2022/04/25/PE%E7%A0%94%E7%A9%B6%EF%BC%9A%E5%AF%BC%E5%87%BA%E8%A1%A8%E4%B8%8E%E9%87%8D%E5%AE%9A%E4%BD%8D%E8%A1%A8/2.PNG">
+<meta property="og:image" content="http://example.com/2022/04/25/PE%E7%A0%94%E7%A9%B6%EF%BC%9A%E5%AF%BC%E5%87%BA%E8%A1%A8%E4%B8%8E%E9%87%8D%E5%AE%9A%E4%BD%8D%E8%A1%A8/3.PNG">
+<meta property="og:image" content="http://example.com/2022/04/25/PE%E7%A0%94%E7%A9%B6%EF%BC%9A%E5%AF%BC%E5%87%BA%E8%A1%A8%E4%B8%8E%E9%87%8D%E5%AE%9A%E4%BD%8D%E8%A1%A8/4.PNG">
+<meta property="og:image" content="http://example.com/2022/04/25/PE%E7%A0%94%E7%A9%B6%EF%BC%9A%E5%AF%BC%E5%87%BA%E8%A1%A8%E4%B8%8E%E9%87%8D%E5%AE%9A%E4%BD%8D%E8%A1%A8/5.PNG">
+<meta property="og:image" content="http://example.com/2022/04/25/PE%E7%A0%94%E7%A9%B6%EF%BC%9A%E5%AF%BC%E5%87%BA%E8%A1%A8%E4%B8%8E%E9%87%8D%E5%AE%9A%E4%BD%8D%E8%A1%A8/6.PNG">
+<meta property="article:published_time" content="2022-04-25T04:46:01.000Z">
+<meta property="article:modified_time" content="2022-04-26T07:59:31.639Z">
+<meta property="article:author" content="刘小白">
+<meta property="article:tag" content="Windows">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/2022/04/25/PE%E7%A0%94%E7%A9%B6%EF%BC%9A%E5%AF%BC%E5%87%BA%E8%A1%A8%E4%B8%8E%E9%87%8D%E5%AE%9A%E4%BD%8D%E8%A1%A8/1.PNG">
+
+<link rel="canonical" href="http://example.com/2022/04/25/PE%E7%A0%94%E7%A9%B6%EF%BC%9A%E5%AF%BC%E5%87%BA%E8%A1%A8%E4%B8%8E%E9%87%8D%E5%AE%9A%E4%BD%8D%E8%A1%A8/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>PE研究：导出表与重定位表 | 刘小白的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="刘小白的博客" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">刘小白的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">爱生活爱技术爱女盆友</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签<span class="badge">4</span></a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类<span class="badge">3</span></a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">12</span></a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+
+  <a href="https://github.com/lmc1997" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2022/04/25/PE%E7%A0%94%E7%A9%B6%EF%BC%9A%E5%AF%BC%E5%87%BA%E8%A1%A8%E4%B8%8E%E9%87%8D%E5%AE%9A%E4%BD%8D%E8%A1%A8/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/me.jpg">
+      <meta itemprop="name" content="刘小白">
+      <meta itemprop="description" content="Windows、逆向、C/C++、学习、生活">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="刘小白的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          PE研究：导出表与重定位表
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-04-25 12:46:01" itemprop="dateCreated datePublished" datetime="2022-04-25T12:46:01+08:00">2022-04-25</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-04-26 15:59:31" itemprop="dateModified" datetime="2022-04-26T15:59:31+08:00">2022-04-26</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Windows/" itemprop="url" rel="index"><span itemprop="name">Windows</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>在学习PE结构的过程中，最重要的能力之一就是对各种表的理解与运用。本章将会对导出表与重定位表的工作原理进行剖析，并给出代码解析这两张表。在我的GitHub中有一个用C和win32写的PE工具项目，里面有完整的源码，实现了对PE文件的解析以及其他功能，需要的可以去我的GitHub查看。</p>
+<span id="more"></span>
+
+<h1 id="导出表"><a href="#导出表" class="headerlink" title="导出表"></a>导出表</h1><p>一般情况下，一个DLL文件提供函数给别的程序使用，一个EXE文件使用DLL提供的函数。那么其他程序如何才能在DLL中找到找到对应的函数呢？答案就是导出表。导出表里面记录了该文件对外提供了哪些函数，以及导出的方式(以序号导出和以函数名称导出)。</p>
+<h2 id="如何定位导出表"><a href="#如何定位导出表" class="headerlink" title="如何定位导出表"></a>如何定位导出表</h2><p>可选PE头的最后一个结构，是数据目录项(IMAGE_DATA_DIRECTORY)，这是一个16项数组，每一项的结构如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">image_data_directory</span>		//数据目录</span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">	<span class="type">int</span> VirtualAddress;		<span class="comment">//RVA</span></span><br><span class="line">	<span class="type">int</span> Size;			<span class="comment">//大小</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure>
+
+<p>在这16项中，前15项分别对应了15张表，最后一项保留。其中第一张就是导出表。</p>
+<h2 id="导出表结构"><a href="#导出表结构" class="headerlink" title="导出表结构"></a>导出表结构</h2><p>上面的结构，只是说明导出表在哪里，有多大，并不是真正的导出表。<strong>想在磁盘文件(FileBuffer)中找到导出表，必须先将上面的RVA转换成FOA</strong>。导出表结构如下</p>
+<p><img src="/2022/04/25/PE%E7%A0%94%E7%A9%B6%EF%BC%9A%E5%AF%BC%E5%87%BA%E8%A1%A8%E4%B8%8E%E9%87%8D%E5%AE%9A%E4%BD%8D%E8%A1%A8/1.PNG"></p>
+<p>在导出表结构中有三个RVA，分别指向了三张表。想要在FileBuffer中定位它们，一样需要转换成FOA。</p>
+<h2 id="AddressOfFunctions说明"><a href="#AddressOfFunctions说明" class="headerlink" title="AddressOfFunctions说明"></a>AddressOfFunctions说明</h2><p>这张表里面的内容是导出函数的地址。宽度为4字节(即一个地址的宽度)，数量为导出表结构中的NumberOfFunctions。<strong>该表中存储的地址是RVA</strong>，需要加上ImageBase才是运行时函数的地址。</p>
+<p>另外许需要注意的是，这个NumberOfFunctions的值有可能不是真正导出函数的数量。因为这个值是系统根据公式：<strong>NumberofFunctions &#x3D; 导出函数最大序号 - 最小序号 + 1</strong> 得到的。因此如果导出函数序号不连续的话，函数地址表中的地址数量就会多于导出函数的数量，多出来的部分用0填补。</p>
+<h2 id="AddressOfNames说明"><a href="#AddressOfNames说明" class="headerlink" title="AddressOfNames说明"></a>AddressOfNames说明</h2><p>这张表里面的内容是导出函数名称的地址(注意不是函数名称)。宽度同样为4字节，数量为导出表结构中的NumberOfNames。<strong>该表中存储的地址是以名字导出函数的名字的RVA</strong>，想要打印出来导出函数的名字，需要将RVA转换成FOA。</p>
+<p><img src="/2022/04/25/PE%E7%A0%94%E7%A9%B6%EF%BC%9A%E5%AF%BC%E5%87%BA%E8%A1%A8%E4%B8%8E%E9%87%8D%E5%AE%9A%E4%BD%8D%E8%A1%A8/2.PNG"></p>
+<p>函数名称在文件中的位置是不确定的，但是在函数名称地址表中，一定是按照字母顺序排序的。</p>
+<h2 id="AddressOfNameOrdinals说明"><a href="#AddressOfNameOrdinals说明" class="headerlink" title="AddressOfNameOrdinals说明"></a>AddressOfNameOrdinals说明</h2><p>这张表里面存储的是序号(不是真正的函数序号，可以理解成偏移)。宽度为2字节，数量与AddressOfNames表相等，都为NumberOfNames。需要注意的是，该表中存储的内容 + Base &#x3D; 函数的导出序号。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>1、为什么需要分成三张表？</p>
+<p>因为函数导出的个数与函数名的个数未必一样，所以要将函数地址表和函数名称表分开。</p>
+<p>2、函数地址表是不是一定大于等于函数名称表？</p>
+<p>不一定，因为有可能有多个函数的名字指向同一个函数地址。</p>
+<p>3、系统是如何根据一个函数的名字确定函数的地址的？</p>
+<p><img src="/2022/04/25/PE%E7%A0%94%E7%A9%B6%EF%BC%9A%E5%AF%BC%E5%87%BA%E8%A1%A8%E4%B8%8E%E9%87%8D%E5%AE%9A%E4%BD%8D%E8%A1%A8/3.PNG"></p>
+<p>首先根据函数名称，搜索函数名称表，利用这个函数名称的索引直接索引到函数序号表，得到对应的函数序号表的内容，将这个值作为函数地址表的索引，便得到了函数地址RVA，最后加上ImageBase，便可在运行时找到对应的函数。</p>
+<p>4、系统是如何根据函数的导出序号获取一个函数的地址？</p>
+<p>直接看张图即可</p>
+<p><img src="/2022/04/25/PE%E7%A0%94%E7%A9%B6%EF%BC%9A%E5%AF%BC%E5%87%BA%E8%A1%A8%E4%B8%8E%E9%87%8D%E5%AE%9A%E4%BD%8D%E8%A1%A8/4.PNG"></p>
+<p>最后给出两个函数，分别模拟系统根据名字和序号找到对应的函数</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//通过函数名称找到对应函数地址，参数为filebuffer和函数名称</span></span><br><span class="line"><span class="type">char</span>* <span class="title function_">Get_Func_Addr_by_Name</span><span class="params">(<span class="type">char</span>* filebuffer, <span class="type">char</span>* FuncName)</span></span><br><span class="line">&#123;	</span><br><span class="line">	<span class="type">char</span>* Func_Addr = <span class="literal">NULL</span>;      <span class="comment">//声明导出函数指针</span></span><br><span class="line">	</span><br><span class="line">	dos_header* pdosh = (dos_header*)filebuffer;</span><br><span class="line">	pe_header* ppeh = (pe_header*)((pdosh-&gt;e_lfanew) + <span class="number">4</span> + (<span class="type">int</span>)pdosh);</span><br><span class="line">	optional_pe_header* popeh = (optional_pe_header*)((<span class="type">int</span>)ppeh + <span class="number">20</span>);</span><br><span class="line">	image_section_header* pish = (image_section_header*)((<span class="type">int</span>)popeh + ppeh-&gt;SizeOfOptionalHeader);</span><br><span class="line">	image_export_directory* pied = <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* 定位到导出表，找到导出表的全部信息，包括最后三个表的地址 */</span></span><br><span class="line">	<span class="type">char</span>* export_rva = (<span class="type">char</span>*)popeh-&gt;DataDirectory[<span class="number">0</span>].VirtualAddress;</span><br><span class="line">	<span class="type">char</span>* export_foa = RVA_TO_FOA(export_rva);</span><br><span class="line">	pied = (image_export_directory*)(export_foa + (<span class="type">int</span>)filebuffer);                  <span class="comment">//导出表指针</span></span><br><span class="line">	<span class="type">int</span>* pName_Addr = (<span class="type">int</span>*)(RVA_TO_FOA((<span class="type">char</span>*)pied-&gt;AddressOfNames) + (<span class="type">int</span>)filebuffer);                <span class="comment">//AddressOfNames表指针</span></span><br><span class="line">	<span class="type">short</span>* pOrdinal_Addr = (<span class="type">short</span>*)(RVA_TO_FOA((<span class="type">char</span>*)pied-&gt;AddressOfNameOrdinals) + (<span class="type">int</span>)filebuffer);  <span class="comment">//AddressOfNameOrdinals</span></span><br><span class="line">	<span class="type">int</span>* pFunc_Addr = (<span class="type">int</span>*)(RVA_TO_FOA((<span class="type">char</span>*)pied-&gt;AddressOfFunctions) + (<span class="type">int</span>)filebuffer);            <span class="comment">//AddressOfFunctions</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">/* 循环遍历name地址表，匹配函数名 */</span></span><br><span class="line">	<span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>; i &lt; pied-&gt;NumberOfNames; i++)</span><br><span class="line">	&#123;</span><br><span class="line">		<span class="keyword">if</span>(<span class="built_in">strcmp</span>((<span class="type">char</span>*)(*(pName_Addr + i) + (<span class="type">int</span>)filebuffer), FuncName) != <span class="number">0</span>)</span><br><span class="line">		&#123;</span><br><span class="line">			<span class="keyword">continue</span>;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">else</span></span><br><span class="line">		&#123;</span><br><span class="line">			Func_Addr = (<span class="type">char</span>*)(*(pFunc_Addr + *(pOrdinal_Addr + i)));</span><br><span class="line">			<span class="built_in">printf</span>(<span class="string">&quot;RVA:%x\n&quot;</span>, Func_Addr);</span><br><span class="line">			<span class="keyword">return</span> Func_Addr;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;没有这个函数!\n&quot;</span>);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//通过导出函数序号找到对应函数地址，参数为filebuffer和导出函数序号</span></span><br><span class="line"><span class="type">char</span>* <span class="title function_">Get_Func_Addr_by_Ordinals</span><span class="params">(<span class="type">char</span>* filebuffer, <span class="type">int</span> ordinals)</span></span><br><span class="line">&#123;	</span><br><span class="line">	<span class="type">char</span>* Func_Addr = <span class="literal">NULL</span>;      <span class="comment">//声明导出函数指针</span></span><br><span class="line">	</span><br><span class="line">	dos_header* pdosh = (dos_header*)filebuffer;</span><br><span class="line">	pe_header* ppeh = (pe_header*)((pdosh-&gt;e_lfanew) + <span class="number">4</span> + (<span class="type">int</span>)pdosh);</span><br><span class="line">	optional_pe_header* popeh = (optional_pe_header*)((<span class="type">int</span>)ppeh + <span class="number">20</span>);</span><br><span class="line">	image_section_header* pish = (image_section_header*)((<span class="type">int</span>)popeh + ppeh-&gt;SizeOfOptionalHeader);</span><br><span class="line">	image_export_directory* pied = <span class="literal">NULL</span>;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* 定位到导出表，找到导出表的全部信息，只需要AddressOfFunctions表 */</span></span><br><span class="line">	<span class="type">char</span>* export_rva = (<span class="type">char</span>*)popeh-&gt;DataDirectory[<span class="number">0</span>].VirtualAddress;</span><br><span class="line">	<span class="type">char</span>* export_foa = RVA_TO_FOA(export_rva);</span><br><span class="line">	pied = (image_export_directory*)(export_foa + (<span class="type">int</span>)filebuffer);                  <span class="comment">//导出表指针</span></span><br><span class="line">	<span class="type">int</span>* pFunc_Addr = (<span class="type">int</span>*)(RVA_TO_FOA((<span class="type">char</span>*)pied-&gt;AddressOfFunctions) + (<span class="type">int</span>)filebuffer);  <span class="comment">//AddressOfFunctions</span></span><br><span class="line"></span><br><span class="line">	Func_Addr = (<span class="type">char</span>*)(*(pFunc_Addr + (ordinals - pied-&gt;Base)));</span><br><span class="line"></span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;RVA:%x\n&quot;</span>, Func_Addr);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> Func_Addr;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h1 id="重定位表"><a href="#重定位表" class="headerlink" title="重定位表"></a>重定位表</h1><h2 id="程序加载的过程"><a href="#程序加载的过程" class="headerlink" title="程序加载的过程"></a>程序加载的过程</h2><p>在前面的章节中，已经笼统地阐述过一个程序是如何加载到内存并运行起来的。现在再做一个补充说明</p>
+<p><img src="/2022/04/25/PE%E7%A0%94%E7%A9%B6%EF%BC%9A%E5%AF%BC%E5%87%BA%E8%A1%A8%E4%B8%8E%E9%87%8D%E5%AE%9A%E4%BD%8D%E8%A1%A8/5.PNG"></p>
+<p>可以看到，一个EXE文件在运行前，系统会加载很多该程序需要用到的DLL到低2G的高领空。高2G留给内核使用。下面做几点特别说明：</p>
+<p>1、一般情况下，一个EXE文件是可以根据它的ImageBase来进行加载的，因为EXE文件拥有它自己独立的4GB内存空间。而DLL却不行，因为DLL是有EXE文件需要使用它，它才加载到相关EXE的进程空间的。</p>
+<p>2、一个程序可能会用到很多DLL，而每个DLL默认的ImageBase均为0x10000000h，显然不可能每个DLL都会加载到该地址，它们只能在后面的地址加载。</p>
+<p>3、为了提高搜索的速度，模块(DLL)间地址也是要对齐的，模块地址对齐为10000H 也就是64K。所以DLL文件的起始地址要10000H对齐。</p>
+<h2 id="为什么要使用重定位表"><a href="#为什么要使用重定位表" class="headerlink" title="为什么要使用重定位表"></a>为什么要使用重定位表</h2><p>在前面逆向的章节中，我们已经知道，一个全局变量在反汇编中，地址是写死的。这个地址计算的公式是：编译时生成的地址 &#x3D; ImageBase + RVA。这个地址在程序编译完成后，已经写入文件了。</p>
+<p>那么现在来假设一种情况，程序在加载的时候，没有按照ImageBase的地址0x400000h加载，而是加载到了0x500000h这个地址，可是因为全局变量在加载前已经写死了(RVA加的是ImageBase的值)，程序执行的时候仍然会按照原来的地址群寻找这个变量，可是很明显，该全局变量已的位置已经改变了。</p>
+<p>1、也就是说，如果程序能够按照预定的ImageBase来加载的话，那么就不需要重定位表。这也是为什么exe很少有重定位表，而DLL大多都有重定位表的原因。</p>
+<p>2、一旦某个模块没有按照ImageBase进行加载，那么所有类似上面中的地址就都需要修正，否则，引用的地址就是无效的。</p>
+<p>3、一个EXE中，需要修正的地方会很多，那我们如何来记录都有哪些地方需要修正呢？答案就是重定位表。</p>
+<h2 id="重定位表结构解析"><a href="#重定位表结构解析" class="headerlink" title="重定位表结构解析"></a>重定位表结构解析</h2><p>数据目录项的第6个结构就是重定位表。通过第6项的VirtualAddress转换成FOA即可找到重定位表。结构如下</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> _<span class="title">IMAGE_BASE_RELOCATION</span> &#123;</span>						</span><br><span class="line">    DWORD   VirtualAddress;						</span><br><span class="line">    DWORD   SizeOfBlock;						</span><br><span class="line">&#125; IMAGE_BASE_RELOCATION;						</span><br><span class="line"><span class="keyword">typedef</span> IMAGE_BASE_RELOCATION, * PIMAGE_BASE_RELOCATION;						</span><br></pre></td></tr></table></figure>
+
+<p>看一张更清楚的结构图，有很多块该结构组成</p>
+<p><img src="/2022/04/25/PE%E7%A0%94%E7%A9%B6%EF%BC%9A%E5%AF%BC%E5%87%BA%E8%A1%A8%E4%B8%8E%E9%87%8D%E5%AE%9A%E4%BD%8D%E8%A1%A8/6.PNG"></p>
+<p>解析说明：</p>
+<p>1、判断一共有几块数据：最后一个结构的VirtualAddress与SizeOfBlock都为0。</p>
+<p>2、具体项，宽度为2字节(16位)。在内存中，页的大小是0x1000H，也就是用2的12次方就可以表示一个页内的所有偏移。因此在16位的具体项中，低12位就代表这个偏移。高4位只有两种可能，当高4位值为3时，代表的是需要修改的数据；高4位值为0时，代表该数据是用于对齐的，可以不用管。因此我们只关注高4位值为3的数据。</p>
+<p>3、VirtualAddress，宽度是4字节，代表的是当前这一页的基址。真正的RVA &#x3D; VirtualAddress + 具体项的低12位。注意得到的是RVA。</p>
+<p>4、SizeOfBlock，宽度是4字节，代表的是当前块的总大小(比如上图中绿色、黄色块的大小)。具体项的数量 &#x3D; (SizeOfBlock - 8)&#x2F;2。</p>
+
+    </div>
+
+    
+    
+    
+
+<div>
+  
+    <div>
+    
+        <div style="text-align:center;color: #ccc;font-size:14px;">-------------已经读到底啦 <i class="fa fa-shower"></i> 感谢阅读哦~-------------</div>
+    
+</div>
+
+  
+</div>
+        <div class="reward-container">
+  <div>不赌天意，不猜人心.</div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="/images/wechatpay.jpg" alt="刘小白 微信支付">
+        <p>微信支付</p>
+      </div>
+      
+      <div style="display: inline-block;">
+        <img src="/images/alipay.jpg" alt="刘小白 支付宝">
+        <p>支付宝</p>
+      </div>
+
+  </div>
+</div>
+
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>刘小白
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="http://example.com/2022/04/25/PE%E7%A0%94%E7%A9%B6%EF%BC%9A%E5%AF%BC%E5%87%BA%E8%A1%A8%E4%B8%8E%E9%87%8D%E5%AE%9A%E4%BD%8D%E8%A1%A8/" title="PE研究：导出表与重定位表">http://example.com/2022/04/25/PE研究：导出表与重定位表/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Windows/" rel="tag"><i class="fa fa-tag"></i>
+		Windows</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/04/24/PE%E7%A0%94%E7%A9%B6%EF%BC%9A%E6%89%A9%E5%A4%A7%E8%8A%82%E4%B8%8E%E5%90%88%E5%B9%B6%E8%8A%82/" rel="prev" title="PE研究：扩大节与合并节">
+      <i class="fa fa-chevron-left"></i> PE研究：扩大节与合并节
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2022/04/26/PE%E7%A0%94%E7%A9%B6%EF%BC%9A%E7%A7%BB%E5%8A%A8%E5%AF%BC%E5%87%BA%E8%A1%A8%E4%B8%8E%E9%87%8D%E5%AE%9A%E4%BD%8D%E8%A1%A8/" rel="next" title="PE研究：移动导出表与重定位表">
+      PE研究：移动导出表与重定位表 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AF%BC%E5%87%BA%E8%A1%A8"><span class="nav-number">1.</span> <span class="nav-text">导出表</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E5%AE%9A%E4%BD%8D%E5%AF%BC%E5%87%BA%E8%A1%A8"><span class="nav-number">1.1.</span> <span class="nav-text">如何定位导出表</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AF%BC%E5%87%BA%E8%A1%A8%E7%BB%93%E6%9E%84"><span class="nav-number">1.2.</span> <span class="nav-text">导出表结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#AddressOfFunctions%E8%AF%B4%E6%98%8E"><span class="nav-number">1.3.</span> <span class="nav-text">AddressOfFunctions说明</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#AddressOfNames%E8%AF%B4%E6%98%8E"><span class="nav-number">1.4.</span> <span class="nav-text">AddressOfNames说明</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#AddressOfNameOrdinals%E8%AF%B4%E6%98%8E"><span class="nav-number">1.5.</span> <span class="nav-text">AddressOfNameOrdinals说明</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">1.6.</span> <span class="nav-text">总结</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%87%8D%E5%AE%9A%E4%BD%8D%E8%A1%A8"><span class="nav-number">2.</span> <span class="nav-text">重定位表</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A8%8B%E5%BA%8F%E5%8A%A0%E8%BD%BD%E7%9A%84%E8%BF%87%E7%A8%8B"><span class="nav-number">2.1.</span> <span class="nav-text">程序加载的过程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E4%BD%BF%E7%94%A8%E9%87%8D%E5%AE%9A%E4%BD%8D%E8%A1%A8"><span class="nav-number">2.2.</span> <span class="nav-text">为什么要使用重定位表</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%87%8D%E5%AE%9A%E4%BD%8D%E8%A1%A8%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90"><span class="nav-number">2.3.</span> <span class="nav-text">重定位表结构解析</span></a></li></ol></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="刘小白"
+      src="/images/me.jpg">
+  <p class="site-author-name" itemprop="name">刘小白</p>
+  <div class="site-description" itemprop="description">Windows、逆向、C/C++、学习、生活</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">12</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">4</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="">
+    <a target="_blank" class="social-link" href="/atom.xml" style="color: burlywood;">
+      <span class="icon">
+        <i class="fa fa-rss"></i>
+      </span>
+      <span class="label">RSS</span>
+    </a>
+  </div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="mailto:1716281594@qq.com" title="E-Mail → mailto:1716281594@qq.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://github.com/lmc1997" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;lmc1997" rel="noopener" target="_blank"><i class="fa fa-star fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">刘小白</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  
+  <script color='0,0,0' opacity='0.5' zIndex='-1' count='150' src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"model":{"jsonPath":"/live2dw/assets/wanko.model.json"},"display":{"position":"right","width":150,"height":300},"mobile":{"show":true},"log":false});</script></body>
+</html>
+<!-- 页面点击小红心 -->
+<script type="text/javascript" src="/js/src/clicklove.js"></script>
+

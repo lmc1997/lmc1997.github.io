@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/16x16.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":null},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.json"};
+  </script>
+
+  <meta name="description" content="在一个PE文件中，各种表是由编译器生成的，表里面存储了非常重要的信息。在程序启动的时候，系统会根据这些表做各种初始化的工作。但是假如有一个小需求，需要对.exe文件的二进制代码进行加密来保护程序，但问题是：这些表的信息和程序的代码与数据都是混合在一起的，一旦被加密，系统也无法准确定位这些表，也就无法做初始化的工作，程序也就无法启动。因此，移动各种表，是对程序加密与解密的基础。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="PE研究：移动导出表与重定位表">
+<meta property="og:url" content="http://example.com/2022/04/26/PE%E7%A0%94%E7%A9%B6%EF%BC%9A%E7%A7%BB%E5%8A%A8%E5%AF%BC%E5%87%BA%E8%A1%A8%E4%B8%8E%E9%87%8D%E5%AE%9A%E4%BD%8D%E8%A1%A8/index.html">
+<meta property="og:site_name" content="刘小白的博客">
+<meta property="og:description" content="在一个PE文件中，各种表是由编译器生成的，表里面存储了非常重要的信息。在程序启动的时候，系统会根据这些表做各种初始化的工作。但是假如有一个小需求，需要对.exe文件的二进制代码进行加密来保护程序，但问题是：这些表的信息和程序的代码与数据都是混合在一起的，一旦被加密，系统也无法准确定位这些表，也就无法做初始化的工作，程序也就无法启动。因此，移动各种表，是对程序加密与解密的基础。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/2022/04/26/PE%E7%A0%94%E7%A9%B6%EF%BC%9A%E7%A7%BB%E5%8A%A8%E5%AF%BC%E5%87%BA%E8%A1%A8%E4%B8%8E%E9%87%8D%E5%AE%9A%E4%BD%8D%E8%A1%A8/1.PNG">
+<meta property="og:image" content="http://example.com/2022/04/26/PE%E7%A0%94%E7%A9%B6%EF%BC%9A%E7%A7%BB%E5%8A%A8%E5%AF%BC%E5%87%BA%E8%A1%A8%E4%B8%8E%E9%87%8D%E5%AE%9A%E4%BD%8D%E8%A1%A8/2.PNG">
+<meta property="og:image" content="http://example.com/2022/04/26/PE%E7%A0%94%E7%A9%B6%EF%BC%9A%E7%A7%BB%E5%8A%A8%E5%AF%BC%E5%87%BA%E8%A1%A8%E4%B8%8E%E9%87%8D%E5%AE%9A%E4%BD%8D%E8%A1%A8/3.PNG">
+<meta property="og:image" content="http://example.com/2022/04/26/PE%E7%A0%94%E7%A9%B6%EF%BC%9A%E7%A7%BB%E5%8A%A8%E5%AF%BC%E5%87%BA%E8%A1%A8%E4%B8%8E%E9%87%8D%E5%AE%9A%E4%BD%8D%E8%A1%A8/4.PNG">
+<meta property="og:image" content="http://example.com/2022/04/26/PE%E7%A0%94%E7%A9%B6%EF%BC%9A%E7%A7%BB%E5%8A%A8%E5%AF%BC%E5%87%BA%E8%A1%A8%E4%B8%8E%E9%87%8D%E5%AE%9A%E4%BD%8D%E8%A1%A8/5.PNG">
+<meta property="og:image" content="http://example.com/2022/04/26/PE%E7%A0%94%E7%A9%B6%EF%BC%9A%E7%A7%BB%E5%8A%A8%E5%AF%BC%E5%87%BA%E8%A1%A8%E4%B8%8E%E9%87%8D%E5%AE%9A%E4%BD%8D%E8%A1%A8/7.PNG">
+<meta property="og:image" content="http://example.com/2022/04/26/PE%E7%A0%94%E7%A9%B6%EF%BC%9A%E7%A7%BB%E5%8A%A8%E5%AF%BC%E5%87%BA%E8%A1%A8%E4%B8%8E%E9%87%8D%E5%AE%9A%E4%BD%8D%E8%A1%A8/6.PNG">
+<meta property="article:published_time" content="2022-04-26T04:35:16.000Z">
+<meta property="article:modified_time" content="2022-04-27T06:30:07.462Z">
+<meta property="article:author" content="刘小白">
+<meta property="article:tag" content="Windows">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/2022/04/26/PE%E7%A0%94%E7%A9%B6%EF%BC%9A%E7%A7%BB%E5%8A%A8%E5%AF%BC%E5%87%BA%E8%A1%A8%E4%B8%8E%E9%87%8D%E5%AE%9A%E4%BD%8D%E8%A1%A8/1.PNG">
+
+<link rel="canonical" href="http://example.com/2022/04/26/PE%E7%A0%94%E7%A9%B6%EF%BC%9A%E7%A7%BB%E5%8A%A8%E5%AF%BC%E5%87%BA%E8%A1%A8%E4%B8%8E%E9%87%8D%E5%AE%9A%E4%BD%8D%E8%A1%A8/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>PE研究：移动导出表与重定位表 | 刘小白的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="刘小白的博客" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">刘小白的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">爱生活爱技术爱女盆友</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签<span class="badge">4</span></a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类<span class="badge">3</span></a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">12</span></a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+
+  <a href="https://github.com/lmc1997" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2022/04/26/PE%E7%A0%94%E7%A9%B6%EF%BC%9A%E7%A7%BB%E5%8A%A8%E5%AF%BC%E5%87%BA%E8%A1%A8%E4%B8%8E%E9%87%8D%E5%AE%9A%E4%BD%8D%E8%A1%A8/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/me.jpg">
+      <meta itemprop="name" content="刘小白">
+      <meta itemprop="description" content="Windows、逆向、C/C++、学习、生活">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="刘小白的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          PE研究：移动导出表与重定位表
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-04-26 12:35:16" itemprop="dateCreated datePublished" datetime="2022-04-26T12:35:16+08:00">2022-04-26</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-04-27 14:30:07" itemprop="dateModified" datetime="2022-04-27T14:30:07+08:00">2022-04-27</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Windows/" itemprop="url" rel="index"><span itemprop="name">Windows</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>在一个PE文件中，各种表是由编译器生成的，表里面存储了非常重要的信息。在程序启动的时候，系统会根据这些表做各种初始化的工作。但是假如有一个小需求，需要对.exe文件的二进制代码进行加密来保护程序，但问题是：这些表的信息和程序的代码与数据都是混合在一起的，一旦被加密，系统也无法准确定位这些表，也就无法做初始化的工作，程序也就无法启动。因此，移动各种表，是对程序加密与解密的基础。</p>
+<span id="more"></span>
+
+<p>上一章节学习了导出表与重定位表，本节就来移动它们。</p>
+<h1 id="移动导出表"><a href="#移动导出表" class="headerlink" title="移动导出表"></a>移动导出表</h1><p>先来看一张移动导出表的结构图</p>
+<p><img src="/2022/04/26/PE%E7%A0%94%E7%A9%B6%EF%BC%9A%E7%A7%BB%E5%8A%A8%E5%AF%BC%E5%87%BA%E8%A1%A8%E4%B8%8E%E9%87%8D%E5%AE%9A%E4%BD%8D%E8%A1%A8/1.PNG"></p>
+<p>这里给出一种较为合理的移动方法(注意本方法是在FileBuffer中进行的，省去了拉伸的步骤)：</p>
+<p>1、在DLL中新增一个节，并返回新增后的FOA。这个节里面存放移动出来的各种东西。</p>
+<p>2、在新增节开头复制AddressOfFunctions表，长度为4*NumberOfFunctions。</p>
+<p>3、紧接着复制AddressOfNameOrdinals表，长度为2*NumberOfNames。</p>
+<p>4、紧接着复制AddressOfNames表，长度为4*NumberOfNames。</p>
+<p>5、紧接着复制所有函数名，复制的时候直接修复名称地址表，指向新移动的位置。</p>
+<p>6、在最后一个函数名后面复制导出表结构。</p>
+<p>7、修复新的导出表结构指向三个表的地址，指向新的表。</p>
+<p>8、修复项目录中的值，指向新的导出表结构。</p>
+<p>下面给出实现代码</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 移动导出表, 注意修复地址时转换成RVA */</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">Move_Export</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="comment">//第一步：在DLL中新增一个节，并返回新增后的FOA</span></span><br><span class="line">	<span class="type">char</span>* ImageBuffer = <span class="built_in">file_to_image</span>();</span><br><span class="line">    <span class="comment">//增加节的函数在前面的章节有讲过</span></span><br><span class="line">	<span class="type">char</span>* ImageBuffer2 = <span class="built_in">AddSection</span>(ImageBuffer, <span class="number">4096</span>);</span><br><span class="line">	<span class="type">char</span>* NewBuffer = <span class="built_in">image_to_file</span>(ImageBuffer2);</span><br><span class="line"></span><br><span class="line">	dos_header* pdh = (dos_header*)NewBuffer;</span><br><span class="line">	pe_header* pph = (pe_header*)(pdh-&gt;e_lfanew + <span class="number">4</span> + (<span class="type">int</span>)pdh);</span><br><span class="line">	optional_pe_header* poph = (optional_pe_header*)((<span class="type">int</span>)(pdh-&gt;e_lfanew) + <span class="number">4</span> + <span class="number">20</span> + (<span class="type">int</span>)pdh);</span><br><span class="line">	image_section_header* pish = (image_section_header*)(pph-&gt;SizeOfOptionalHeader + (<span class="type">int</span>)poph);</span><br><span class="line">	image_export_directory* pied = <span class="literal">NULL</span>;</span><br><span class="line">	<span class="type">char</span>* export_rva = (<span class="type">char</span>*)poph-&gt;DataDirectory[<span class="number">0</span>].VirtualAddress;</span><br><span class="line">	<span class="type">char</span>* export_foa = <span class="built_in">RVA_TO_FOA</span>(export_rva);</span><br><span class="line">	pied = (image_export_directory*)(export_foa + (<span class="type">int</span>)NewBuffer);</span><br><span class="line"></span><br><span class="line">	<span class="type">char</span>* FOA_add = (<span class="type">char</span>*)(pish + pph-&gt;NumberOfSection - <span class="number">1</span>)-&gt;PointerToRawData;</span><br><span class="line"></span><br><span class="line">	<span class="comment">//第二步：复制AddressOfFunctions表</span></span><br><span class="line">	<span class="type">char</span>* src_AddressOfFunctions = (<span class="type">char</span>*)(<span class="built_in">RVA_TO_FOA</span>((<span class="type">char</span>*)pied-&gt;AddressOfFunctions) + (<span class="type">int</span>)NewBuffer);</span><br><span class="line">	<span class="type">char</span>* des_AddressOfFunctions = (<span class="type">char</span>*)(FOA_add + (<span class="type">int</span>)NewBuffer);</span><br><span class="line">	<span class="built_in">memcpy</span>(des_AddressOfFunctions, src_AddressOfFunctions, <span class="number">4</span>*pied-&gt;NumberOfFunctions);  <span class="comment">//长度：4*NumberOfFunctions</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">//第三步：复制AddressOfNameOrdinals表</span></span><br><span class="line">	<span class="type">char</span>* src_AddressOfNameOrdinals = (<span class="type">char</span>*)(<span class="built_in">RVA_TO_FOA</span>((<span class="type">char</span>*)pied-&gt;AddressOfNameOrdinals) + (<span class="type">int</span>)NewBuffer);</span><br><span class="line">	<span class="type">char</span>* des_AddressOfNameOrdinals = (<span class="type">char</span>*)(FOA_add + (<span class="type">int</span>)NewBuffer + <span class="number">4</span>*pied-&gt;NumberOfFunctions);</span><br><span class="line">	<span class="built_in">memcpy</span>(des_AddressOfNameOrdinals, src_AddressOfNameOrdinals, <span class="number">2</span>*pied-&gt;NumberOfNames);  <span class="comment">//长度：NumberOfNames*2</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">//第四步：复制AddressOfNames表</span></span><br><span class="line">	<span class="type">char</span>* src_AddressOfNames = (<span class="type">char</span>*)(<span class="built_in">RVA_TO_FOA</span>((<span class="type">char</span>*)pied-&gt;AddressOfNames) + (<span class="type">int</span>)NewBuffer);</span><br><span class="line">	<span class="type">char</span>* des_AddressOfNames = (<span class="type">char</span>*)((<span class="type">int</span>)des_AddressOfNameOrdinals + <span class="number">2</span>*pied-&gt;NumberOfNames);</span><br><span class="line">	<span class="built_in">memcpy</span>(des_AddressOfNames, src_AddressOfNames, <span class="number">4</span>*pied-&gt;NumberOfNames);  <span class="comment">//长度：NumberOfNames*4</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">//第五步：复制所有的函数名</span></span><br><span class="line">	<span class="type">int</span> len = <span class="number">0</span>;           <span class="comment">//记录每一个函数名长度</span></span><br><span class="line">	<span class="type">int</span> count = <span class="number">0</span>;         <span class="comment">//记录全部函数名总长度</span></span><br><span class="line">	<span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>; i &lt; pied-&gt;NumberOfNames - <span class="number">1</span>; i++)     <span class="comment">//复制除了最后一个函数名的函数名</span></span><br><span class="line">	&#123;</span><br><span class="line">		<span class="type">char</span>* src_name = (<span class="type">char</span>*)((<span class="built_in">RVA_TO_FOA</span>((<span class="type">char</span>*)*((<span class="type">int</span>*)src_AddressOfNames + i)) + (<span class="type">int</span>)NewBuffer));</span><br><span class="line">		<span class="type">char</span>* des_name = (<span class="type">char</span>*)((<span class="type">int</span>)des_AddressOfNames + <span class="number">4</span>*pied-&gt;NumberOfNames + len);</span><br><span class="line">		len = *((<span class="type">int</span>*)src_AddressOfNames + i + <span class="number">1</span>) - *((<span class="type">int</span>*)src_AddressOfNames + i);</span><br><span class="line">		<span class="built_in">memcpy</span>(des_name, src_name, len);</span><br><span class="line">		<span class="type">int</span>* New_Addressname = ((<span class="type">int</span>*)des_AddressOfNames + i);</span><br><span class="line">		*New_Addressname = (<span class="type">int</span>)((<span class="type">int</span>)des_name - (<span class="type">int</span>)NewBuffer - (pish + pph-&gt;NumberOfSection - <span class="number">1</span>)-&gt;PointerToRawData + (pish + pph-&gt;NumberOfSection - <span class="number">1</span>)-&gt;VirtualAddress);   <span class="comment">//修复新的函数名称地址表,转换成RVA</span></span><br><span class="line">		count += len;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="type">char</span>* src_last_func_name = (<span class="type">char</span>*)(<span class="built_in">RVA_TO_FOA</span>((<span class="type">char</span>*)(*(<span class="type">int</span>*)src_AddressOfNames)) + (<span class="type">int</span>)NewBuffer) + count;</span><br><span class="line">	<span class="type">char</span>* des_last_func_name = (<span class="type">char</span>*)((<span class="type">int</span>)des_AddressOfNames + <span class="number">4</span>*pied-&gt;NumberOfNames) + count;</span><br><span class="line">	<span class="type">int</span>* Last_New_AddressesName = (<span class="type">int</span>*)des_AddressOfNames + pied-&gt;NumberOfNames - <span class="number">1</span>;</span><br><span class="line">	*Last_New_AddressesName = (<span class="type">int</span>)des_last_func_name - (<span class="type">int</span>)NewBuffer - (pish + pph-&gt;NumberOfSection - <span class="number">1</span>)-&gt;PointerToRawData + (pish + pph-&gt;NumberOfSection - <span class="number">1</span>)-&gt;VirtualAddress;   <span class="comment">//修复最后一个函数名称地址表,转换成RVA</span></span><br><span class="line">	<span class="keyword">while</span>(*src_last_func_name)      <span class="comment">//复制最后一个函数名</span></span><br><span class="line">	&#123;</span><br><span class="line">		*des_last_func_name = *src_last_func_name;</span><br><span class="line">		src_last_func_name++;</span><br><span class="line">		des_last_func_name++;</span><br><span class="line">	&#125;</span><br><span class="line">	*des_last_func_name = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line">	<span class="comment">//第六步：复制IMAGE_EXPORT_DIRECTORY导出表结构</span></span><br><span class="line">	<span class="type">char</span>* src_IMAGE_EXPORT_DIRECTORY = (<span class="type">char</span>*)(<span class="built_in">RVA_TO_FOA</span>((<span class="type">char</span>*)(poph-&gt;DataDirectory[<span class="number">0</span>].VirtualAddress)) + (<span class="type">int</span>)NewBuffer);</span><br><span class="line">	<span class="type">char</span>* des_IMAGE_EXPORT_DIRECTORY = des_last_func_name + <span class="number">1</span>;</span><br><span class="line">	<span class="built_in">memcpy</span>(des_IMAGE_EXPORT_DIRECTORY, src_IMAGE_EXPORT_DIRECTORY, <span class="number">40</span>);</span><br><span class="line"></span><br><span class="line">	<span class="comment">//第七步：修复IMAGE_EXPORT_DIRECTORY结构中的三个表地址</span></span><br><span class="line">	image_export_directory* New_IMAGE_EXPORT_DIRECTORY = (image_export_directory*)des_IMAGE_EXPORT_DIRECTORY;</span><br><span class="line">	New_IMAGE_EXPORT_DIRECTORY-&gt;AddressOfFunctions = (<span class="type">int</span>)des_AddressOfFunctions - (<span class="type">int</span>)NewBuffer - (pish + pph-&gt;NumberOfSection - <span class="number">1</span>)-&gt;PointerToRawData + (pish + pph-&gt;NumberOfSection - <span class="number">1</span>)-&gt;VirtualAddress;</span><br><span class="line">	New_IMAGE_EXPORT_DIRECTORY-&gt;AddressOfNameOrdinals = (<span class="type">int</span>)des_AddressOfNameOrdinals - (<span class="type">int</span>)NewBuffer - (pish + pph-&gt;NumberOfSection - <span class="number">1</span>)-&gt;PointerToRawData + (pish + pph-&gt;NumberOfSection - <span class="number">1</span>)-&gt;VirtualAddress;</span><br><span class="line">	New_IMAGE_EXPORT_DIRECTORY-&gt;AddressOfNames = (<span class="type">int</span>)des_AddressOfNames - (<span class="type">int</span>)NewBuffer - (pish + pph-&gt;NumberOfSection - <span class="number">1</span>)-&gt;PointerToRawData + (pish + pph-&gt;NumberOfSection - <span class="number">1</span>)-&gt;VirtualAddress;</span><br><span class="line"></span><br><span class="line">	<span class="comment">//第八步：修复目录项中的值，指向新的IMAGE_EXPORT_DIRECTORY,注意转换成RVA</span></span><br><span class="line">	poph-&gt;DataDirectory[<span class="number">0</span>].VirtualAddress = </span><br><span class="line">		(<span class="type">int</span>)des_IMAGE_EXPORT_DIRECTORY - (<span class="type">int</span>)NewBuffer - (pish + pph-&gt;NumberOfSection - <span class="number">1</span>)-&gt;PointerToRawData</span><br><span class="line">		+ (pish + pph-&gt;NumberOfSection - <span class="number">1</span>)-&gt;VirtualAddress;</span><br><span class="line"></span><br><span class="line">	<span class="comment">//存盘</span></span><br><span class="line">	<span class="type">int</span> size = <span class="number">0</span>;</span><br><span class="line">	size = (<span class="type">int</span>)((pish + pph-&gt;NumberOfSection - <span class="number">1</span>)-&gt;PointerToRawData) + (<span class="type">int</span>)((pish + pph-&gt;NumberOfSection - <span class="number">1</span>)-&gt;SizeOfRawData);</span><br><span class="line">	FILE* pfp = <span class="built_in">fopen</span>(<span class="string">&quot;C:\\Documents and Settings\\easy\\桌面\\moveexport.dll&quot;</span>, <span class="string">&quot;wb&quot;</span>);</span><br><span class="line">	<span class="built_in">fwrite</span>(NewBuffer, size, <span class="number">1</span>, pfp);</span><br><span class="line">	</span><br><span class="line">	<span class="keyword">return</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>移动表前的DLL的节与导出函数如下：</p>
+<p><img src="/2022/04/26/PE%E7%A0%94%E7%A9%B6%EF%BC%9A%E7%A7%BB%E5%8A%A8%E5%AF%BC%E5%87%BA%E8%A1%A8%E4%B8%8E%E9%87%8D%E5%AE%9A%E4%BD%8D%E8%A1%A8/2.PNG"></p>
+<p><img src="/2022/04/26/PE%E7%A0%94%E7%A9%B6%EF%BC%9A%E7%A7%BB%E5%8A%A8%E5%AF%BC%E5%87%BA%E8%A1%A8%E4%B8%8E%E9%87%8D%E5%AE%9A%E4%BD%8D%E8%A1%A8/3.PNG" alt="3"></p>
+<p>移动之后：</p>
+<p><img src="/2022/04/26/PE%E7%A0%94%E7%A9%B6%EF%BC%9A%E7%A7%BB%E5%8A%A8%E5%AF%BC%E5%87%BA%E8%A1%A8%E4%B8%8E%E9%87%8D%E5%AE%9A%E4%BD%8D%E8%A1%A8/4.PNG"></p>
+<p><img src="/2022/04/26/PE%E7%A0%94%E7%A9%B6%EF%BC%9A%E7%A7%BB%E5%8A%A8%E5%AF%BC%E5%87%BA%E8%A1%A8%E4%B8%8E%E9%87%8D%E5%AE%9A%E4%BD%8D%E8%A1%A8/5.PNG"></p>
+<h1 id="移动重定位表"><a href="#移动重定位表" class="headerlink" title="移动重定位表"></a>移动重定位表</h1><p>重定位表的移动相对于导出表比较简单，直接上代码：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 移动重定向表 */</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">Move_Reloc</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="comment">//第一步：在DLL中新增一个节，并返回新增后的FOA</span></span><br><span class="line">	<span class="type">char</span>* ImageBuffer = <span class="built_in">file_to_image</span>();</span><br><span class="line">	<span class="type">char</span>* ImageBuffer2 = <span class="built_in">AddSection</span>(ImageBuffer, <span class="number">20480</span>);</span><br><span class="line">	<span class="type">char</span>* NewBuffer = <span class="built_in">image_to_file</span>(ImageBuffer2);</span><br><span class="line"></span><br><span class="line">	dos_header* pdh = (dos_header*)NewBuffer;</span><br><span class="line">	pe_header* pph = (pe_header*)(pdh-&gt;e_lfanew + <span class="number">4</span> + (<span class="type">int</span>)pdh);</span><br><span class="line">	optional_pe_header* poph = (optional_pe_header*)((<span class="type">int</span>)(pdh-&gt;e_lfanew) + <span class="number">4</span> + <span class="number">20</span> + (<span class="type">int</span>)pdh);</span><br><span class="line">	image_section_header* pish = (image_section_header*)(pph-&gt;SizeOfOptionalHeader + (<span class="type">int</span>)poph);</span><br><span class="line">	<span class="type">char</span>* basereloc_rva = (<span class="type">char</span>*)poph-&gt;DataDirectory[<span class="number">5</span>].VirtualAddress;</span><br><span class="line">	<span class="type">char</span>* basereloc_foa = <span class="built_in">RVA_TO_FOA</span>(basereloc_rva);</span><br><span class="line">	image_base_relocation* pibr = (image_base_relocation*)(basereloc_foa + (<span class="type">int</span>)NewBuffer);</span><br><span class="line"></span><br><span class="line">	<span class="type">char</span>* FOA_add = (<span class="type">char</span>*)(pish + pph-&gt;NumberOfSection - <span class="number">1</span>)-&gt;PointerToRawData;</span><br><span class="line"></span><br><span class="line">	<span class="comment">//第二步：复制重定向表</span></span><br><span class="line">	<span class="type">char</span>* src_reloc = (<span class="type">char</span>*)(<span class="built_in">RVA_TO_FOA</span>((<span class="type">char</span>*)poph-&gt;DataDirectory[<span class="number">5</span>].VirtualAddress) + (<span class="type">int</span>)NewBuffer);</span><br><span class="line">	<span class="type">char</span>* des_reloc = (<span class="type">char</span>*)(FOA_add + (<span class="type">int</span>)NewBuffer);</span><br><span class="line">	<span class="type">int</span> reloc_size = <span class="number">0</span>;</span><br><span class="line">	<span class="keyword">while</span>(pibr-&gt;VirtualAddress !=<span class="number">0</span> &amp;&amp; pibr-&gt;SizeOfBlock != <span class="number">0</span>)</span><br><span class="line">	&#123;</span><br><span class="line">		reloc_size += pibr-&gt;SizeOfBlock;</span><br><span class="line">		pibr = (image_base_relocation*)((<span class="type">char</span>*)pibr + pibr-&gt;SizeOfBlock);</span><br><span class="line">	&#125;</span><br><span class="line">	pibr = (image_base_relocation*)(basereloc_foa + (<span class="type">int</span>)NewBuffer);  <span class="comment">//将指针重新指向第一个重定向块</span></span><br><span class="line">	<span class="built_in">memcpy</span>(des_reloc, src_reloc, reloc_size);</span><br><span class="line"></span><br><span class="line">	<span class="comment">//第三步：修复目录项中的值，指向新的IMAGE_BASE_RELOCATION, 注意转换成RVA</span></span><br><span class="line">	poph-&gt;DataDirectory[<span class="number">5</span>].VirtualAddress = (<span class="type">int</span>)FOA_add - (pish + pph-&gt;NumberOfSection - <span class="number">1</span>)-&gt;PointerToRawData</span><br><span class="line">		+ (pish + pph-&gt;NumberOfSection - <span class="number">1</span>)-&gt;VirtualAddress;</span><br><span class="line">	</span><br><span class="line">	<span class="comment">//存盘</span></span><br><span class="line">	<span class="type">int</span> size = <span class="number">0</span>;</span><br><span class="line">	size = (<span class="type">int</span>)((pish + pph-&gt;NumberOfSection - <span class="number">1</span>)-&gt;PointerToRawData) + (<span class="type">int</span>)((pish + pph-&gt;NumberOfSection - <span class="number">1</span>)-&gt;SizeOfRawData);</span><br><span class="line">	FILE* pfp = <span class="built_in">fopen</span>(<span class="string">&quot;C:\\Documents and Settings\\easy\\桌面\\reloc.dll&quot;</span>, <span class="string">&quot;wb&quot;</span>);</span><br><span class="line">	<span class="built_in">fwrite</span>(NewBuffer, size, <span class="number">1</span>, pfp);</span><br><span class="line">	</span><br><span class="line">	<span class="keyword">return</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h1 id="修复重定位表"><a href="#修复重定位表" class="headerlink" title="修复重定位表"></a>修复重定位表</h1><p>这里做一个比较有意思的小实验，来加深一下对重定位表的理解。</p>
+<p>我们知道，一个DLL的ImageBase被另一个DLL占据的时候，系统会根据64KB对齐将这个DLL往下”贴”，并根据重定位表来修复需要修复的全局变量地址。现在我们来模拟操作系统在这个过程中做的事情：自己修改DLL的ImageBase并修复重定位表，然后存盘，使新的DLL仍然可以使用。</p>
+<p>先上代码，然后做解释：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* 更改ImageBase， 并修复重定表 */</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">Update_Reloc</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="comment">/* 1. 将文件读入内存 */</span></span><br><span class="line">	<span class="type">char</span>* FileBuffer = <span class="built_in">Read_exe</span>();</span><br><span class="line">	<span class="type">char</span>* ImageBuffer = <span class="built_in">file_to_image</span>();</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* 2. 定义并初始化各头结构指针 */</span></span><br><span class="line">	dos_header* pdh = (dos_header*)FileBuffer;</span><br><span class="line">	pe_header* pph = (pe_header*)(pdh-&gt;e_lfanew + <span class="number">4</span> + (<span class="type">int</span>)pdh);</span><br><span class="line">	optional_pe_header* poph = (optional_pe_header*)((<span class="type">int</span>)(pdh-&gt;e_lfanew) + <span class="number">4</span> + <span class="number">20</span> + (<span class="type">int</span>)pdh);</span><br><span class="line">	image_section_header* pish = (image_section_header*)(pph-&gt;SizeOfOptionalHeader + (<span class="type">int</span>)poph);</span><br><span class="line">	<span class="type">char</span>* basereloc_rva = (<span class="type">char</span>*)poph-&gt;DataDirectory[<span class="number">5</span>].VirtualAddress;</span><br><span class="line">	<span class="type">char</span>* basereloc_foa = <span class="built_in">RVA_TO_FOA</span>(basereloc_rva);</span><br><span class="line">	image_base_relocation* pibr = (image_base_relocation*)(basereloc_foa + (<span class="type">int</span>)FileBuffer);</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* 3. 修改ImageBase, 注意模块对齐方式为10000H */</span></span><br><span class="line">	poph-&gt;ImageBase += <span class="number">0x50000</span>;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/* 4. 修改重定位表 */</span></span><br><span class="line">	<span class="comment">//image_base_relocation* New_preloc = (image_base_relocation*)(FOA_add + (int)FileBuffer);</span></span><br><span class="line">	<span class="keyword">while</span>(pibr-&gt;VirtualAddress != <span class="number">0</span> &amp;&amp; pibr-&gt;SizeOfBlock != <span class="number">0</span>)</span><br><span class="line">	&#123;</span><br><span class="line">		<span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>; i &lt; (pibr-&gt;SizeOfBlock - <span class="number">8</span>) / <span class="number">2</span>; i++)</span><br><span class="line">		&#123;</span><br><span class="line">			<span class="type">short</span>* item = (<span class="type">short</span>*)((<span class="type">char</span>*)pibr + <span class="number">8</span>);   <span class="comment">//新重定位表具体项指针</span></span><br><span class="line">			<span class="keyword">if</span>((*(item + i) &amp; <span class="number">0xF000</span>) &gt;&gt; <span class="number">12</span> == <span class="number">3</span>)             <span class="comment">//高4位为3才有意义</span></span><br><span class="line">			&#123;</span><br><span class="line">				<span class="type">int</span> rva = (<span class="type">int</span>)pibr-&gt;VirtualAddress + (*(item + i) &amp; <span class="number">0x0FFF</span>);  <span class="comment">//计算绝对地址RVA</span></span><br><span class="line">				<span class="type">int</span> foa = (<span class="type">int</span>)(<span class="built_in">RVA_TO_FOA</span>((<span class="type">char</span>*)rva));</span><br><span class="line">				<span class="type">int</span>* change_addr = (<span class="type">int</span>*)((<span class="type">int</span>)FileBuffer + foa);</span><br><span class="line">				*change_addr += <span class="number">0x50000</span>;      <span class="comment">//直接修复绝对地址， 而不是修改重定位表</span></span><br><span class="line">			&#125;</span><br><span class="line">		&#125;</span><br><span class="line">		pibr = (image_base_relocation*)((<span class="type">char</span>*)pibr + pibr-&gt;SizeOfBlock);</span><br><span class="line">	&#125;</span><br><span class="line">	</span><br><span class="line">	<span class="comment">//存盘</span></span><br><span class="line">	<span class="type">int</span> size = <span class="number">0</span>;</span><br><span class="line">	size = (<span class="type">int</span>)((pish + pph-&gt;NumberOfSection - <span class="number">1</span>)-&gt;PointerToRawData) + (<span class="type">int</span>)((pish + pph-&gt;NumberOfSection - <span class="number">1</span>)-&gt;SizeOfRawData);</span><br><span class="line">	FILE* pfp = <span class="built_in">fopen</span>(<span class="string">&quot;C:\\Documents and Settings\\easy\\桌面\\reloc2.dll&quot;</span>, <span class="string">&quot;wb&quot;</span>);</span><br><span class="line">	<span class="built_in">fwrite</span>(FileBuffer, size, <span class="number">1</span>, pfp);</span><br><span class="line">	</span><br><span class="line">	<span class="keyword">return</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>现在来说明一下修复重定位表的原理，正常情况下，系统会根据重定位表计算出全局变量的地址并使用它。当ImageBase改变的时候，系统会原来写死的地址加上新旧Image Base的差值。因此，我们这里的修复重定位表，并不是修改表中的VirtualAddress或者具体项，而是先计算出来需要修复的绝对地址(FOA+FileBuffer)，然后用这个绝对地址加上差值(我一开始写代码的时候，这个问题也困扰了我很久，网上资料也很少有对修复重定位表解释明白的)。因此在整个过程中，重定位表是没有改变数据的，改变的是根据重定位表找到的数据的地址。</p>
+<p>实验结果：</p>
+<p><img src="/2022/04/26/PE%E7%A0%94%E7%A9%B6%EF%BC%9A%E7%A7%BB%E5%8A%A8%E5%AF%BC%E5%87%BA%E8%A1%A8%E4%B8%8E%E9%87%8D%E5%AE%9A%E4%BD%8D%E8%A1%A8/7.PNG"></p>
+<p><img src="/2022/04/26/PE%E7%A0%94%E7%A9%B6%EF%BC%9A%E7%A7%BB%E5%8A%A8%E5%AF%BC%E5%87%BA%E8%A1%A8%E4%B8%8E%E9%87%8D%E5%AE%9A%E4%BD%8D%E8%A1%A8/6.PNG"></p>
+<p>修改ImageBase后的DLL仍然可以使用。</p>
+
+    </div>
+
+    
+    
+    
+
+<div>
+  
+    <div>
+    
+        <div style="text-align:center;color: #ccc;font-size:14px;">-------------已经读到底啦 <i class="fa fa-shower"></i> 感谢阅读哦~-------------</div>
+    
+</div>
+
+  
+</div>
+        <div class="reward-container">
+  <div>不赌天意，不猜人心.</div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="/images/wechatpay.jpg" alt="刘小白 微信支付">
+        <p>微信支付</p>
+      </div>
+      
+      <div style="display: inline-block;">
+        <img src="/images/alipay.jpg" alt="刘小白 支付宝">
+        <p>支付宝</p>
+      </div>
+
+  </div>
+</div>
+
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>刘小白
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="http://example.com/2022/04/26/PE%E7%A0%94%E7%A9%B6%EF%BC%9A%E7%A7%BB%E5%8A%A8%E5%AF%BC%E5%87%BA%E8%A1%A8%E4%B8%8E%E9%87%8D%E5%AE%9A%E4%BD%8D%E8%A1%A8/" title="PE研究：移动导出表与重定位表">http://example.com/2022/04/26/PE研究：移动导出表与重定位表/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Windows/" rel="tag"><i class="fa fa-tag"></i>
+		Windows</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/04/25/PE%E7%A0%94%E7%A9%B6%EF%BC%9A%E5%AF%BC%E5%87%BA%E8%A1%A8%E4%B8%8E%E9%87%8D%E5%AE%9A%E4%BD%8D%E8%A1%A8/" rel="prev" title="PE研究：导出表与重定位表">
+      <i class="fa fa-chevron-left"></i> PE研究：导出表与重定位表
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%A7%BB%E5%8A%A8%E5%AF%BC%E5%87%BA%E8%A1%A8"><span class="nav-number">1.</span> <span class="nav-text">移动导出表</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%A7%BB%E5%8A%A8%E9%87%8D%E5%AE%9A%E4%BD%8D%E8%A1%A8"><span class="nav-number">2.</span> <span class="nav-text">移动重定位表</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BF%AE%E5%A4%8D%E9%87%8D%E5%AE%9A%E4%BD%8D%E8%A1%A8"><span class="nav-number">3.</span> <span class="nav-text">修复重定位表</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="刘小白"
+      src="/images/me.jpg">
+  <p class="site-author-name" itemprop="name">刘小白</p>
+  <div class="site-description" itemprop="description">Windows、逆向、C/C++、学习、生活</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">12</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">4</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="">
+    <a target="_blank" class="social-link" href="/atom.xml" style="color: burlywood;">
+      <span class="icon">
+        <i class="fa fa-rss"></i>
+      </span>
+      <span class="label">RSS</span>
+    </a>
+  </div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="mailto:1716281594@qq.com" title="E-Mail → mailto:1716281594@qq.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://github.com/lmc1997" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;lmc1997" rel="noopener" target="_blank"><i class="fa fa-star fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">刘小白</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  
+  <script color='0,0,0' opacity='0.5' zIndex='-1' count='150' src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"model":{"jsonPath":"/live2dw/assets/wanko.model.json"},"display":{"position":"right","width":150,"height":300},"mobile":{"show":true},"log":false});</script></body>
+</html>
+<!-- 页面点击小红心 -->
+<script type="text/javascript" src="/js/src/clicklove.js"></script>
+
