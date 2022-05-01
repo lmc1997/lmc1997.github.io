@@ -6,7 +6,7 @@
   <link href="http://example.com/atom.xml" rel="self"/>
   
   <link href="http://example.com/"/>
-  <updated>2022-04-27T06:30:07.462Z</updated>
+  <updated>2022-05-01T08:15:49.617Z</updated>
   <id>http://example.com/</id>
   
   <author>
@@ -15,6 +15,27 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>PE研究：IAT表与导入表</title>
+    <link href="http://example.com/2022/04/28/PE%E7%A0%94%E7%A9%B6%EF%BC%9AIAT%E8%A1%A8%E4%B8%8E%E5%AF%BC%E5%85%A5%E8%A1%A8/"/>
+    <id>http://example.com/2022/04/28/PE%E7%A0%94%E7%A9%B6%EF%BC%9AIAT%E8%A1%A8%E4%B8%8E%E5%AF%BC%E5%85%A5%E8%A1%A8/</id>
+    <published>2022-04-28T05:21:37.000Z</published>
+    <updated>2022-05-01T08:15:49.617Z</updated>
+    
+    <content type="html"><![CDATA[<p>我们已经学习过了导出表，导出表记录的是该文件的导出函数。相对应的，导入表记录的是该文件使用的DLL以及DLL中的函数。本章节来学习导入表的工作原理。</p><span id="more"></span><h1 id="一个有趣的实验"><a href="#一个有趣的实验" class="headerlink" title="一个有趣的实验"></a>一个有趣的实验</h1><p>先来观察一个现象：</p><p><img src="/2022/04/28/PE%E7%A0%94%E7%A9%B6%EF%BC%9AIAT%E8%A1%A8%E4%B8%8E%E5%AF%BC%E5%85%A5%E8%A1%A8/1.PNG"></p><p>将上面这一个小程序使用release版编译，得到一个EXE文件，并使用OD打开它，可以得到该程序<strong>运行时</strong>的内存：<img src="/2022/04/28/PE%E7%A0%94%E7%A9%B6%EF%BC%9AIAT%E8%A1%A8%E4%B8%8E%E5%AF%BC%E5%85%A5%E8%A1%A8/2.PNG"></p><p>可以看到，在调用MessageBox函数时，反汇编代码是CALL [40509C]，于是在数据窗口我们看到了40509C这个地址存储的是MessageBox函数的地址，很明显77D507EA这个地址位于DLL的领空。</p><p>接下来我们用一个16进制文本编辑器，查看一下该文件在<strong>运行前</strong>的对应地址内存：</p><p>由于需要看的是运行前的地址，因此需要把运行时40509C转化为FOA，先来看一下对齐大小：</p><p><img src="/2022/04/28/PE%E7%A0%94%E7%A9%B6%EF%BC%9AIAT%E8%A1%A8%E4%B8%8E%E5%AF%BC%E5%85%A5%E8%A1%A8/3.PNG"></p><p>由于文件对齐与内存对齐是一致的，而且ImageBase为400000，所以转换成FOA为509C。</p><p><img src="/2022/04/28/PE%E7%A0%94%E7%A9%B6%EF%BC%9AIAT%E8%A1%A8%E4%B8%8E%E5%AF%BC%E5%85%A5%E8%A1%A8/4.PNG"></p><p>在文件中509C的位置存放的不是运行时的函数的地址，而是一个RVA偏移551C，再次转换为FOA为551C</p><p><img src="/2022/04/28/PE%E7%A0%94%E7%A9%B6%EF%BC%9AIAT%E8%A1%A8%E4%B8%8E%E5%AF%BC%E5%85%A5%E8%A1%A8/5.PNG"></p><p>可以看到，在运行前，40509C这个地址存放的是函数名字的RVA偏移，而在运行时，这里面的内容被替换为了真正的函数地址。</p><p>那么这里就出现了一个问题，一般在我们自己写的程序中，我们调用了一个我们自己写的函数，它的反汇编语言应该是call 0x12345678，不管是在程序运行前还是运行后，都是这个表现形式。而这里我们调用了MessageBox，在运行时却是call [0x12345678]，0x12345678在程序运行前后存放的内容是不一样的。</p><p>这里的关键就在于，MessageBox是DLL提供的函数，DLL在被需要时才会被载入内存。这也就是为什么调用MessageBox的时候地址不能写固定的地址，因为DLL有可能被重定位。</p><h1 id="导入表结构"><a href="#导入表结构" class="headerlink" title="导入表结构"></a>导入表结构</h1><p>目录项的第二张表就是导入表，通过将RVA转换成FOA，可以在FileBuffer中定位它，导入表结构如下：</p><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> _<span class="title">IMAGE_IMPORT_DESCRIPTOR</span> &#123;</span></span><br><span class="line">    <span class="class"><span class="keyword">union</span> &#123;</span></span><br><span class="line">        DWORD   Characteristics;           </span><br><span class="line">        DWORD   OriginalFirstThunk;<span class="comment">//RVA，指向IMAGE_THUNK_DATA结构数组，INT表</span></span><br><span class="line">    &#125;;</span><br><span class="line">    DWORD   TimeDateStamp;<span class="comment">//时间戳</span></span><br><span class="line">    DWORD   ForwarderChain;              </span><br><span class="line">    DWORD   Name;<span class="comment">//RVA，指向dll名字，该名字已0结尾</span></span><br><span class="line">    DWORD   FirstThunk;<span class="comment">//RVA，指向IMAGE_THUNK_DATA结构数组，IAT表</span></span><br><span class="line">&#125; IMAGE_IMPORT_DESCRIPTOR;</span><br><span class="line"><span class="keyword">typedef</span> IMAGE_IMPORT_DESCRIPTOR UNALIGNED *PIMAGE_IMPORT_DESCRIPTOR;</span><br></pre></td></tr></table></figure><p>在PE文件加载前，IAT表与INT表内容相同，存储的都是函数的名字或者导出序号：</p><p><img src="/2022/04/28/PE%E7%A0%94%E7%A9%B6%EF%BC%9AIAT%E8%A1%A8%E4%B8%8E%E5%AF%BC%E5%85%A5%E8%A1%A8/6.PNG"></p><p>在PE文件加载后，IAT表的内容被替换为对应函数的地址：</p><p><img src="/2022/04/28/PE%E7%A0%94%E7%A9%B6%EF%BC%9AIAT%E8%A1%A8%E4%B8%8E%E5%AF%BC%E5%85%A5%E8%A1%A8/7.PNG"></p><p>一个该导入表结构对应着一个DLL文件，里面记录了导入该DLL中的函数，在PE文件中有很多个导入表结构连在一起，以一个导入表结构大小的0为结尾。</p><p>下面依次说明各个字段</p><p>1、OriginalFirstThunk</p><p><img src="/2022/04/28/PE%E7%A0%94%E7%A9%B6%EF%BC%9AIAT%E8%A1%A8%E4%B8%8E%E5%AF%BC%E5%85%A5%E8%A1%A8/8.PNG"></p><p>指向INT表，表里面的内容是一个IMAGE_THUNK_DATA32结构，该结构实际上是一个4字节的数据，当最高位为0代表这是一个RVA，指向一个结构，该结构如上图所示，该结构指向导入函数名字；当最高位为1是，除去最高位剩下的31位代表函数的序号。</p><p>2、Name</p><p>该字段是一个RVA，指向一个DLL的名字。</p><p>3、FirstThunk</p><p>指向IAT表，该表结构在文件运行前与INT表内容一致(理论上)，在运行时IAT表被系统替换为对应函数的地址。</p><p>注意我这里写的是理论上，因为有可能有一些函数地址在实际运行前就已经写进了IAT表。我们称这种现象为绑定导入，记录这些函数信息的表叫做绑定导入表，我们这里不做赘述。</p>]]></content>
+    
+    
+    <summary type="html">&lt;p&gt;我们已经学习过了导出表，导出表记录的是该文件的导出函数。相对应的，导入表记录的是该文件使用的DLL以及DLL中的函数。本章节来学习导入表的工作原理。&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="Windows" scheme="http://example.com/categories/Windows/"/>
+    
+    
+    <category term="Windows" scheme="http://example.com/tags/Windows/"/>
+    
+  </entry>
   
   <entry>
     <title>PE研究：移动导出表与重定位表</title>
