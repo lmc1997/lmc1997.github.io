@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/16x16.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":null},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.json"};
+  </script>
+
+  <meta name="description" content="上一章节学习了线程相关的知识。有关线程的同步与互斥，例如临界区与互斥量等的问题，网络上有很多资料，这里不做赘述。本章节我们将要学习进程的创建，了解在进程创建过程中系统都做了哪些事情，以及句柄表在内核中的表现形式。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Win32：进程创建与句柄表">
+<meta property="og:url" content="http://example.com/2022/05/13/Win32%EF%BC%9A%E8%BF%9B%E7%A8%8B%E5%88%9B%E5%BB%BA%E4%B8%8E%E5%8F%A5%E6%9F%84%E8%A1%A8/index.html">
+<meta property="og:site_name" content="刘小白的博客">
+<meta property="og:description" content="上一章节学习了线程相关的知识。有关线程的同步与互斥，例如临界区与互斥量等的问题，网络上有很多资料，这里不做赘述。本章节我们将要学习进程的创建，了解在进程创建过程中系统都做了哪些事情，以及句柄表在内核中的表现形式。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/2022/05/13/Win32%EF%BC%9A%E8%BF%9B%E7%A8%8B%E5%88%9B%E5%BB%BA%E4%B8%8E%E5%8F%A5%E6%9F%84%E8%A1%A8/1.PNG">
+<meta property="og:image" content="http://example.com/2022/05/13/Win32%EF%BC%9A%E8%BF%9B%E7%A8%8B%E5%88%9B%E5%BB%BA%E4%B8%8E%E5%8F%A5%E6%9F%84%E8%A1%A8/2.PNG">
+<meta property="og:image" content="http://example.com/2022/05/13/Win32%EF%BC%9A%E8%BF%9B%E7%A8%8B%E5%88%9B%E5%BB%BA%E4%B8%8E%E5%8F%A5%E6%9F%84%E8%A1%A8/3.PNG">
+<meta property="og:image" content="http://example.com/2022/05/13/Win32%EF%BC%9A%E8%BF%9B%E7%A8%8B%E5%88%9B%E5%BB%BA%E4%B8%8E%E5%8F%A5%E6%9F%84%E8%A1%A8/2.PNG">
+<meta property="og:image" content="http://example.com/2022/05/13/Win32%EF%BC%9A%E8%BF%9B%E7%A8%8B%E5%88%9B%E5%BB%BA%E4%B8%8E%E5%8F%A5%E6%9F%84%E8%A1%A8/4.PNG">
+<meta property="og:image" content="http://example.com/2022/05/13/Win32%EF%BC%9A%E8%BF%9B%E7%A8%8B%E5%88%9B%E5%BB%BA%E4%B8%8E%E5%8F%A5%E6%9F%84%E8%A1%A8/5.PNG">
+<meta property="article:published_time" content="2022-05-13T06:29:24.000Z">
+<meta property="article:modified_time" content="2022-08-25T06:02:43.061Z">
+<meta property="article:author" content="刘小白">
+<meta property="article:tag" content="Windows">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/2022/05/13/Win32%EF%BC%9A%E8%BF%9B%E7%A8%8B%E5%88%9B%E5%BB%BA%E4%B8%8E%E5%8F%A5%E6%9F%84%E8%A1%A8/1.PNG">
+
+<link rel="canonical" href="http://example.com/2022/05/13/Win32%EF%BC%9A%E8%BF%9B%E7%A8%8B%E5%88%9B%E5%BB%BA%E4%B8%8E%E5%8F%A5%E6%9F%84%E8%A1%A8/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Win32：进程创建与句柄表 | 刘小白的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="刘小白的博客" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">刘小白的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">爱生活爱技术爱女盆友</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签<span class="badge">4</span></a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类<span class="badge">3</span></a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">16</span></a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+
+  <a href="https://github.com/lmc1997" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2022/05/13/Win32%EF%BC%9A%E8%BF%9B%E7%A8%8B%E5%88%9B%E5%BB%BA%E4%B8%8E%E5%8F%A5%E6%9F%84%E8%A1%A8/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/me.jpg">
+      <meta itemprop="name" content="刘小白">
+      <meta itemprop="description" content="Windows、逆向、C/C++、学习、生活">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="刘小白的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Win32：进程创建与句柄表
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-05-13 14:29:24" itemprop="dateCreated datePublished" datetime="2022-05-13T14:29:24+08:00">2022-05-13</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-08-25 14:02:43" itemprop="dateModified" datetime="2022-08-25T14:02:43+08:00">2022-08-25</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Windows/" itemprop="url" rel="index"><span itemprop="name">Windows</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>上一章节学习了线程相关的知识。有关线程的同步与互斥，例如临界区与互斥量等的问题，网络上有很多资料，这里不做赘述。本章节我们将要学习进程的创建，了解在进程创建过程中系统都做了哪些事情，以及句柄表在内核中的表现形式。</p>
+<span id="more"></span>
+
+<h1 id="进程的创建过程"><a href="#进程的创建过程" class="headerlink" title="进程的创建过程"></a>进程的创建过程</h1><p>首先来区分一下三个概念：程序、镜像、进程。</p>
+<p>程序就是一个存在于磁盘上的PE格式的文件。镜像就是程序在内存中拉伸后的ImageBuffer，这里面是没有线程的。进程就是在内存中运行着的程序，结构与ImageBuffer一样，但是这里面有线程。</p>
+<p>一个程序是怎样运行起来的？</p>
+<p><img src="/2022/05/13/Win32%EF%BC%9A%E8%BF%9B%E7%A8%8B%E5%88%9B%E5%BB%BA%E4%B8%8E%E5%8F%A5%E6%9F%84%E8%A1%A8/1.PNG"></p>
+<p>步骤1：当系统启动后，创建一个进程：Explorer.exe 也就是桌面进程。</p>
+<p>步骤2：当用户双击某一个EXE时，Explorer进程使用CreateProcess函数创建被双击的EXE，也就是说，我们在桌面上双击创建的进程都是Explorer进程的子进程。</p>
+<p>下面来研究一下，CreateProcess函数都做了哪些事情</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">BOOL <span class="title function_">CreateProcess</span><span class="params">(								</span></span><br><span class="line"><span class="params">  LPCTSTR lpApplicationName,                 <span class="comment">// name of executable module				</span></span></span><br><span class="line"><span class="params">  LPTSTR lpCommandLine,                      <span class="comment">// command line string						</span></span></span><br><span class="line"><span class="params">  LPSECURITY_ATTRIBUTES lpProcessAttributes, <span class="comment">// SD								</span></span></span><br><span class="line"><span class="params">  LPSECURITY_ATTRIBUTES lpThreadAttributes,  <span class="comment">// SD								</span></span></span><br><span class="line"><span class="params">  BOOL bInheritHandles,                      <span class="comment">// handle inheritance option				</span></span></span><br><span class="line"><span class="params">  DWORD dwCreationFlags,                     <span class="comment">// creation flags							</span></span></span><br><span class="line"><span class="params">  LPVOID lpEnvironment,                      <span class="comment">// new environment block					</span></span></span><br><span class="line"><span class="params">  LPCTSTR lpCurrentDirectory,                <span class="comment">// current directory name					</span></span></span><br><span class="line"><span class="params">  LPSTARTUPINFO lpStartupInfo,               <span class="comment">// startup information						</span></span></span><br><span class="line"><span class="params">  LPPROCESS_INFORMATION lpProcessInformation <span class="comment">// process information，OUT类型	</span></span></span><br><span class="line"><span class="params">)</span>;								</span><br></pre></td></tr></table></figure>
+
+<p><strong>1、创建内核对象</strong></p>
+<p>当我们在3环调用CreateProcess函数时，实际上是系统在0环(内核层)调用NtCreateProcess，这个函数会在该进程的高2G创建一块内存，用来存放一张表(这张表就是句柄表)。在进程刚刚被创建时，这张表是空的。当我们在这个进程中创建其他的内核对象，比如CreateProcess、CreateThread、CreateEvent、CreateMutex、CreateFile、CreateFileMapping等时，我们会得到这些内核对象的地址。但是如果直接将这些地址返回给3环的程序是不安全的，因为有可能会对这些地址进行恶意或者无意的修改导致错误。因此会对这些地址给一个编号，这个编号就是我们说的句柄。</p>
+<p><img src="/2022/05/13/Win32%EF%BC%9A%E8%BF%9B%E7%A8%8B%E5%88%9B%E5%BB%BA%E4%B8%8E%E5%8F%A5%E6%9F%84%E8%A1%A8/2.PNG"></p>
+<p><strong>2、分配4GB的虚拟空间(Windows32位)</strong></p>
+<p>这部分内容前面章节已经讲过，直接上图</p>
+<p><img src="/2022/05/13/Win32%EF%BC%9A%E8%BF%9B%E7%A8%8B%E5%88%9B%E5%BB%BA%E4%B8%8E%E5%8F%A5%E6%9F%84%E8%A1%A8/3.PNG"></p>
+<p><strong>3、创建进程的主线程</strong></p>
+<p>当进程的空间创建完毕，EXE与导入表中的DLL都正确加载完毕后，会创建一个线程。当线程得到CPU的时候，程序就开始指向了，EIP的初始值设定为：ImageBase+OEP。然后程序就可以运行起来了。</p>
+<p>创建成功后，会将进程的句柄和ID、主线程的句柄和ID存储在一个结构中，该结构如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> _<span class="title">PROCESS_INFORMATION</span>					</span></span><br><span class="line"><span class="class">&#123;</span>					</span><br><span class="line">   HANDLE hProcess;			<span class="comment">//进程句柄	</span></span><br><span class="line">   HANDLE hThread;			<span class="comment">//主线程句柄	</span></span><br><span class="line">   DWORD dwProcessId;			<span class="comment">//进程ID	</span></span><br><span class="line">   DWORD dwThreadId;			<span class="comment">//线程ID	</span></span><br><span class="line">&#125; PROCESS_INFORMATION;					</span><br></pre></td></tr></table></figure>
+
+<p>该结构就是CreateProcess函数的最后一个OUT参数。至此，整个进程创建的过程结束。</p>
+<p>可以总结一句比较经典的话：<strong>进程就是4GB，线程就是EIP</strong>。</p>
+<h1 id="有关CreateProcess函数"><a href="#有关CreateProcess函数" class="headerlink" title="有关CreateProcess函数"></a>有关CreateProcess函数</h1><p>这个函数有很多参数，而且每个参数都比较重要，这里先对前两个和后两个参数进行讲解。</p>
+<p>第一个参数为lpApplicationName，也就是要打开的进程名字，应该指定程序的完整路径。</p>
+<p>第二个参数为lpCommandLine，命令行参数，不仅可以指定进程名，还可以指定给要创建的进程传参。</p>
+<p>上面两个参数均可以创建一个进程。代码如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line">VOID <span class="title function_">TestCreateProcessByAPPName</span><span class="params">()</span>						</span><br><span class="line">&#123;						</span><br><span class="line">	STARTUPINFO si = &#123;<span class="number">0</span>&#125;;   					</span><br><span class="line">    	PROCESS_INFORMATION pi;					</span><br><span class="line">						</span><br><span class="line">	si.cb = <span class="keyword">sizeof</span>(si);					</span><br><span class="line">						</span><br><span class="line">	TCHAR szApplicationName[] =TEXT(<span class="string">&quot;c://program files//internet explorer//iexplore.exe&quot;</span>);					</span><br><span class="line">						</span><br><span class="line">	BOOL res = CreateProcess(					</span><br><span class="line">		szApplicationName, 				</span><br><span class="line">		<span class="literal">NULL</span>, 				</span><br><span class="line">		<span class="literal">NULL</span>, 				</span><br><span class="line">		<span class="literal">NULL</span>, 				</span><br><span class="line">		FALSE, 				</span><br><span class="line">		CREATE_NEW_CONSOLE, 				</span><br><span class="line">		<span class="literal">NULL</span>, 				</span><br><span class="line">		<span class="literal">NULL</span>, &amp;si, &amp;pi); 				  						</span><br><span class="line">&#125;						</span><br><span class="line">VOID <span class="title function_">TestCreateProcessByCmdline</span><span class="params">()</span>						</span><br><span class="line">&#123;						</span><br><span class="line">	STARTUPINFO si = &#123;<span class="number">0</span>&#125;;   					</span><br><span class="line">    	PROCESS_INFORMATION pi;					</span><br><span class="line">						</span><br><span class="line">	si.cb = <span class="keyword">sizeof</span>(si);					</span><br><span class="line">						</span><br><span class="line">	TCHAR szCmdline[] =TEXT(<span class="string">&quot;c://program files//internet explorer//iexplore.exe http://www.ifeng.com&quot;</span>);					</span><br><span class="line">						</span><br><span class="line">	BOOL res = CreateProcess(					</span><br><span class="line">		<span class="literal">NULL</span>, 				</span><br><span class="line">		szCmdline, 				</span><br><span class="line">		<span class="literal">NULL</span>, 				</span><br><span class="line">		<span class="literal">NULL</span>, 				</span><br><span class="line">		FALSE, 				</span><br><span class="line">		CREATE_NEW_CONSOLE, 				</span><br><span class="line">		<span class="literal">NULL</span>, 				</span><br><span class="line">		<span class="literal">NULL</span>, &amp;si, &amp;pi); 				</span><br><span class="line">&#125;						</span><br></pre></td></tr></table></figure>
+
+<p>倒数第二个参数为lpStartupInfo，是一个结构，用来设定要创建的应用程序的属性。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> _<span class="title">STARTUPINFO</span>			</span></span><br><span class="line"><span class="class">&#123;</span>			</span><br><span class="line">   DWORD cb;			</span><br><span class="line">   PSTR lpReserved;			</span><br><span class="line">   PSTR lpDesktop;			</span><br><span class="line">   PSTR lpTitle;			</span><br><span class="line">   DWORD dwX;			</span><br><span class="line">   DWORD dwY;			</span><br><span class="line">   DWORD dwXSize;			</span><br><span class="line">   DWORD dwYSize;			</span><br><span class="line">   DWORD dwXCountChars;			</span><br><span class="line">   DWORD dwYCountChars;			</span><br><span class="line">   DWORD dwFillAttribute;			</span><br><span class="line">   DWORD dwFlags;			</span><br><span class="line">   WORD wShowWindow;			</span><br><span class="line">   WORD cbReserved2;			</span><br><span class="line">   PBYTE lpReserved2;			</span><br><span class="line">   HANDLE hStdInput;			</span><br><span class="line">   HANDLE hStdOutput;			</span><br><span class="line">   HANDLE hStdError;			</span><br><span class="line">&#125; STARTUPINFO, *LPSTARTUPINFO;			</span><br></pre></td></tr></table></figure>
+
+<p>一般情况下，只需要对该结构的第一个成员赋值就行了，该值为当前结构的大小。</p>
+<p>最后一个参数lpProcessInformation前面讲解过，也是一个结构，存储了进程与主线程的句柄和ID。下面关于句柄与ID进行一下说明，两者概念很多人容易混淆。</p>
+<p>1、句柄与ID都是系统分配的一个编号，句柄是客户程序使用，ID主要是系统调度时使用。</p>
+<p>2、调用CloseHandle关闭进程或者线程句柄的时候，只是让内核计数器减少一个，并不是终止进程或者线程。<strong>进程或线程将继续运行，直到它自己终止运行</strong>(在我们创建和打开内核对象时，该内核对象计数器会+1，内核对象计数器不为0时代表该内核对象还在被使用中)。</p>
+<p>3、线程与进程ID是不可能相同的，但是并不意味着我们得到了ID就能对其进行操作。因为一个进程结束后再运行起来时，其ID是有可能会变化的，前面的那个ID有可能被赋给了其他进程或线程。因此我们3环的客户程序一般都是通过句柄操作。</p>
+<h1 id="进程终止"><a href="#进程终止" class="headerlink" title="进程终止"></a>进程终止</h1><p>与线程类似，进程终止也有三种方式：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="number">1</span>、VOID　<span class="title function_">ExitProcess</span><span class="params">(UINT fuExitCode)</span>;				<span class="comment">//进程自己调用							</span></span><br><span class="line"><span class="number">2</span>、BOOL <span class="title function_">TerminateProcess</span><span class="params">(HANDLE hProcess, UINT fuExitCode)</span>;	<span class="comment">//终止其他进程				</span></span><br><span class="line"><span class="number">3</span>、ExitThread;							<span class="comment">//终止进程中的所有线程，进程也会终止			</span></span><br></pre></td></tr></table></figure>
+
+<p>可以通过GetExitCodeProcess函数获取进程退出结束的退出码。</p>
+<p>进程终止时的相关操作：</p>
+<p>1、进程中剩余的所有线程全部终止运行</p>
+<p>2、进程指定的所有用户对象均被释放，所有内核对象均被关闭</p>
+<p>3、进程内核对象的状态变成收到通知的状态</p>
+<p>4、进程内核对象的使用计数递减1</p>
+<h1 id="句柄的继承"><a href="#句柄的继承" class="headerlink" title="句柄的继承"></a>句柄的继承</h1><p>如果想要让两个进程共享一个内核对象，一种方法是可以在一个进程中创建一个内核对象，并为这个对象起一个名字，然后在另一个进程中通过这个名字打开这个内核对象。</p>
+<p>还有一种方法是通过句柄继承。前面讲过，一个进程在创建时，会创建一张句柄表。那么通过这个进程创建的子进程就可以继承父进程的句柄表。使得不同的进程拥有相同的内核对象。</p>
+<p>以CreateEvent函数为例：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">HANDLE  <span class="title function_">CreateEvent</span><span class="params">(</span></span><br><span class="line"><span class="params">　　LPSECURITY_ATTRIBUTES  lpEventAttributes,<span class="comment">// 安全属性 </span></span></span><br><span class="line"><span class="params">　　BOOL  bManualReset,<span class="comment">// 复位方式</span></span></span><br><span class="line"><span class="params">　　BOOL  bInitialState,<span class="comment">// 初始状态</span></span></span><br><span class="line"><span class="params">　　LPCTSTR  lpName <span class="comment">// 对象名称 </span></span></span><br><span class="line"><span class="params">)</span>;</span><br></pre></td></tr></table></figure>
+
+<p>第一个参数lpEventAttributes为一个结构，表示该内核对象是否能被继承，NULL表示不能继承。</p>
+<p>第二个参数bManualReset为复位方式。TRUE表示手动复位，必须通过ResetEvent手动将事件恢复到无信号状态。FALSE表示自动复位，当一个线程被释放以后，系统将自动将事件状态复位为无信号状态;对于自动复位的Event对象，仅释放第一个等待到该事件的线程，对其它线程无效；手动复位的Event对象对所有线程有效。</p>
+<p>第三个参数bInitialState为初始状态。TRUE，初始状态有信号；FALSE，初始状态无信号。</p>
+<p>第四个参数lpName为对象名称。</p>
+<p>再来看一下这张图：</p>
+<p><img src="/2022/05/13/Win32%EF%BC%9A%E8%BF%9B%E7%A8%8B%E5%88%9B%E5%BB%BA%E4%B8%8E%E5%8F%A5%E6%9F%84%E8%A1%A8/2.PNG"></p>
+<p>当创建内核对象时，安全属性被赋值的话，上图第三个字段就为1，表示该内核对象可以被继承（<strong>注意这里是可以被继承，而不是被继承了</strong>）。安全属性为NULL的话则是0，代表不能被继承。</p>
+<p>那么子进程如何才能继承得到父进程的句柄表中可以被继承的内核对象呢？这就涉及到了CreateProcess函数的第五个参数bInheritHandles。当该值为TRUE时，才能继承父进程句柄表中那些允许被继承的内核对象，为FALSE时，无法继承父进程的所有内核对象（注意这里是将父进程的句柄表复制一份，而不是将内核对象复制）。</p>
+<p>下面做一个实验，进程A创建一个可被继承的内核对象，然后创建一个子进程B来继承它。在A中设置信号的地方下断点，然后在B进程中监听这个对象是否发信号。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//父进程A代码</span></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">(<span class="type">int</span> argc, <span class="type">char</span>* argv[])</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="type">char</span> szBuffer[<span class="number">256</span>] = &#123;<span class="number">0</span>&#125;;							</span><br><span class="line">	<span class="type">char</span> szHandle[<span class="number">8</span>] = &#123;<span class="number">0</span>&#125;;							</span><br><span class="line">	<span class="comment">//若要创建能继承的句柄，父进程必须指定一个SECURITY_ATTRIBUTES结构并对它进行初始化							</span></span><br><span class="line">	<span class="comment">//三个成员的意义：大小、默认安全属性、是否可以继承							</span></span><br><span class="line">	SECURITY_ATTRIBUTES sa;							</span><br><span class="line">	sa.nLength = <span class="keyword">sizeof</span>(sa);							</span><br><span class="line">	sa.lpSecurityDescriptor = <span class="literal">NULL</span>;							</span><br><span class="line">	sa.bInheritHandle = TRUE; 							</span><br><span class="line">	<span class="comment">//创建一个可以被继承的内核对象							</span></span><br><span class="line">	HANDLE g_hEvent = CreateEvent(&amp;sa, TRUE, FALSE, <span class="literal">NULL</span>);	</span><br><span class="line">	</span><br><span class="line">	<span class="comment">//组织命令行参数	C:/Documents and Settings/easy/桌面/逆向/B/Debug/B.exe			</span></span><br><span class="line">	<span class="built_in">sprintf</span>(szHandle,<span class="string">&quot;%x&quot;</span>,g_hEvent);				</span><br><span class="line">	<span class="built_in">sprintf</span>(szBuffer,<span class="string">&quot;C:/Documents and Settings/easy/桌面/逆向/B/Debug/B.exe %s&quot;</span>,szHandle);				</span><br><span class="line"></span><br><span class="line">	<span class="comment">//定义创建进程需要用的结构体			</span></span><br><span class="line">	STARTUPINFO si = &#123;<span class="number">0</span>&#125;;   			</span><br><span class="line">	PROCESS_INFORMATION pi;			</span><br><span class="line">	si.cb = <span class="keyword">sizeof</span>(si);	</span><br><span class="line">	</span><br><span class="line">	<span class="comment">//创建子进程				</span></span><br><span class="line">	BOOL res = CreateProcess(				</span><br><span class="line">		<span class="literal">NULL</span>, 			</span><br><span class="line">		szBuffer, 			</span><br><span class="line">		<span class="literal">NULL</span>, 			</span><br><span class="line">		<span class="literal">NULL</span>, 			</span><br><span class="line">		TRUE,					<span class="comment">//TRUE说明子进程可以继承父进程的句柄表			</span></span><br><span class="line">		CREATE_NEW_CONSOLE, 			</span><br><span class="line">		<span class="literal">NULL</span>, 			</span><br><span class="line">		<span class="literal">NULL</span>, &amp;si, &amp;pi); </span><br><span class="line">	</span><br><span class="line">	<span class="comment">//设置事件为已通知			</span></span><br><span class="line">	SetEvent(g_hEvent);			</span><br><span class="line">				</span><br><span class="line">	<span class="comment">//关闭句柄 内核对象不会被销毁，而是对象计数器-1			</span></span><br><span class="line">	CloseHandle(g_hEvent);  			</span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//子进程B代码</span></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">(<span class="type">int</span> argc, <span class="type">char</span>* argv[])</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="type">char</span> szBuffer[<span class="number">256</span>] = &#123;<span class="number">0</span>&#125;;								</span><br><span class="line">	<span class="built_in">memcpy</span>(szBuffer,argv[<span class="number">1</span>],<span class="number">8</span>);									</span><br><span class="line">	DWORD dwHandle = <span class="number">0</span>;									</span><br><span class="line">	<span class="built_in">sscanf</span>(szBuffer,<span class="string">&quot;%x&quot;</span>,&amp;dwHandle);				</span><br><span class="line">					</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;%s\n&quot;</span>,argv[<span class="number">0</span>]);								</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;%x\n&quot;</span>,dwHandle);								</span><br><span class="line">	HANDLE g_hEvent = (HANDLE)dwHandle;				</span><br><span class="line">				</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;开始等待.....\n&quot;</span>);				</span><br><span class="line">	<span class="comment">//当事件变成已通知时 				</span></span><br><span class="line">	WaitForSingleObject(g_hEvent, INFINITE);				</span><br><span class="line">					</span><br><span class="line">	DWORD dwCode = GetLastError();				</span><br><span class="line">					</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;等到消息.....%x\n&quot;</span>,dwCode);				</span><br><span class="line">					</span><br><span class="line">	getchar();				</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>首先在A进程中的SetEvent(g_hEvent)处下断点，内核对象event被创建时无信号，B进程会在WaitForSingleObject(g_hEvent, INFINITE)处无限等待直到该对象有信号。</p>
+<p><img src="/2022/05/13/Win32%EF%BC%9A%E8%BF%9B%E7%A8%8B%E5%88%9B%E5%BB%BA%E4%B8%8E%E5%8F%A5%E6%9F%84%E8%A1%A8/4.PNG"></p>
+<p>在进程A中单步执行，使内核对象有信号，子进程B将会得到信号，代表子进程继承了父进程的内核对象。</p>
+<p><img src="/2022/05/13/Win32%EF%BC%9A%E8%BF%9B%E7%A8%8B%E5%88%9B%E5%BB%BA%E4%B8%8E%E5%8F%A5%E6%9F%84%E8%A1%A8/5.PNG"></p>
+
+    </div>
+
+    
+    
+    
+
+<div>
+  
+    <div>
+    
+        <div style="text-align:center;color: #ccc;font-size:14px;">-------------已经读到底啦 <i class="fa fa-shower"></i> 感谢阅读哦~-------------</div>
+    
+</div>
+
+  
+</div>
+        <div class="reward-container">
+  <div>不赌天意，不猜人心.</div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="/images/wechatpay.jpg" alt="刘小白 微信支付">
+        <p>微信支付</p>
+      </div>
+      
+      <div style="display: inline-block;">
+        <img src="/images/alipay.jpg" alt="刘小白 支付宝">
+        <p>支付宝</p>
+      </div>
+
+  </div>
+</div>
+
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>刘小白
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="http://example.com/2022/05/13/Win32%EF%BC%9A%E8%BF%9B%E7%A8%8B%E5%88%9B%E5%BB%BA%E4%B8%8E%E5%8F%A5%E6%9F%84%E8%A1%A8/" title="Win32：进程创建与句柄表">http://example.com/2022/05/13/Win32：进程创建与句柄表/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Windows/" rel="tag"><i class="fa fa-tag"></i>
+		Windows</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/05/10/Win32%EF%BC%9A%E7%BA%BF%E7%A8%8B%E6%8E%A7%E5%88%B6%E4%B8%8ECONTEXT%E7%BB%93%E6%9E%84/" rel="prev" title="Win32：线程控制与CONTEXT结构">
+      <i class="fa fa-chevron-left"></i> Win32：线程控制与CONTEXT结构
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E7%9A%84%E5%88%9B%E5%BB%BA%E8%BF%87%E7%A8%8B"><span class="nav-number">1.</span> <span class="nav-text">进程的创建过程</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%9C%89%E5%85%B3CreateProcess%E5%87%BD%E6%95%B0"><span class="nav-number">2.</span> <span class="nav-text">有关CreateProcess函数</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%BF%9B%E7%A8%8B%E7%BB%88%E6%AD%A2"><span class="nav-number">3.</span> <span class="nav-text">进程终止</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8F%A5%E6%9F%84%E7%9A%84%E7%BB%A7%E6%89%BF"><span class="nav-number">4.</span> <span class="nav-text">句柄的继承</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="刘小白"
+      src="/images/me.jpg">
+  <p class="site-author-name" itemprop="name">刘小白</p>
+  <div class="site-description" itemprop="description">Windows、逆向、C/C++、学习、生活</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">16</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">4</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="">
+    <a target="_blank" class="social-link" href="/atom.xml" style="color: burlywood;">
+      <span class="icon">
+        <i class="fa fa-rss"></i>
+      </span>
+      <span class="label">RSS</span>
+    </a>
+  </div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="mailto:1716281594@qq.com" title="E-Mail → mailto:1716281594@qq.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://github.com/lmc1997" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;lmc1997" rel="noopener" target="_blank"><i class="fa fa-star fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">刘小白</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  
+  <script color='0,0,0' opacity='0.5' zIndex='-1' count='150' src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"model":{"jsonPath":"/live2dw/assets/wanko.model.json"},"display":{"position":"right","width":150,"height":300},"mobile":{"show":true},"log":false});</script></body>
+</html>
+<!-- 页面点击小红心 -->
+<script type="text/javascript" src="/js/src/clicklove.js"></script>
+
