@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/16x16.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":null},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.json"};
+  </script>
+
+  <meta name="description" content="这节课来完成对壳程序的编写。壳可以分成两类：加密壳和压缩壳，加密壳又可以分成两类：分别是二进制壳和源代码加密壳。对于二进制壳来所，它并不改变代码的指令，而是对整个PE文件结构做一个扭曲变形，并且对关键代码进行加密。但是对于所有这种二进制壳，不管怎么变形，当这个程序执行时，在内存中拉伸后一定是要恢复原状的。想要脱这种二进制壳，需要跟着它的汇编指令执行到在内存中展开后，将内存dump出来，再修改OEP">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Win32：加密壳的编写">
+<meta property="og:url" content="http://example.com/2022/10/19/Win32%EF%BC%9A%E5%8A%A0%E5%AF%86%E5%A3%B3%E7%9A%84%E7%BC%96%E5%86%99/index.html">
+<meta property="og:site_name" content="刘小白的博客">
+<meta property="og:description" content="这节课来完成对壳程序的编写。壳可以分成两类：加密壳和压缩壳，加密壳又可以分成两类：分别是二进制壳和源代码加密壳。对于二进制壳来所，它并不改变代码的指令，而是对整个PE文件结构做一个扭曲变形，并且对关键代码进行加密。但是对于所有这种二进制壳，不管怎么变形，当这个程序执行时，在内存中拉伸后一定是要恢复原状的。想要脱这种二进制壳，需要跟着它的汇编指令执行到在内存中展开后，将内存dump出来，再修改OEP">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/2022/10/19/Win32%EF%BC%9A%E5%8A%A0%E5%AF%86%E5%A3%B3%E7%9A%84%E7%BC%96%E5%86%99/1.PNG">
+<meta property="og:image" content="http://example.com/2022/10/19/Win32%EF%BC%9A%E5%8A%A0%E5%AF%86%E5%A3%B3%E7%9A%84%E7%BC%96%E5%86%99/2.PNG">
+<meta property="og:image" content="http://example.com/2022/10/19/Win32%EF%BC%9A%E5%8A%A0%E5%AF%86%E5%A3%B3%E7%9A%84%E7%BC%96%E5%86%99/3.PNG">
+<meta property="article:published_time" content="2022-10-19T10:49:28.000Z">
+<meta property="article:modified_time" content="2023-02-07T12:36:49.038Z">
+<meta property="article:author" content="刘小白">
+<meta property="article:tag" content="Windows">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/2022/10/19/Win32%EF%BC%9A%E5%8A%A0%E5%AF%86%E5%A3%B3%E7%9A%84%E7%BC%96%E5%86%99/1.PNG">
+
+<link rel="canonical" href="http://example.com/2022/10/19/Win32%EF%BC%9A%E5%8A%A0%E5%AF%86%E5%A3%B3%E7%9A%84%E7%BC%96%E5%86%99/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Win32：加密壳的编写 | 刘小白的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="刘小白的博客" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">刘小白的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">爱生活爱技术爱女盆友</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签<span class="badge">4</span></a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类<span class="badge">3</span></a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">18</span></a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+
+  <a href="https://github.com/lmc1997" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2022/10/19/Win32%EF%BC%9A%E5%8A%A0%E5%AF%86%E5%A3%B3%E7%9A%84%E7%BC%96%E5%86%99/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/me.jpg">
+      <meta itemprop="name" content="刘小白">
+      <meta itemprop="description" content="Windows、逆向、C/C++、学习、生活">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="刘小白的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Win32：加密壳的编写
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-10-19 18:49:28" itemprop="dateCreated datePublished" datetime="2022-10-19T18:49:28+08:00">2022-10-19</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-02-07 20:36:49" itemprop="dateModified" datetime="2023-02-07T20:36:49+08:00">2023-02-07</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Windows/" itemprop="url" rel="index"><span itemprop="name">Windows</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>这节课来完成对壳程序的编写。壳可以分成两类：加密壳和压缩壳，加密壳又可以分成两类：分别是二进制壳和源代码加密壳。对于二进制壳来所，它并不改变代码的指令，而是对整个PE文件结构做一个扭曲变形，并且对关键代码进行加密。但是对于所有这种二进制壳，不管怎么变形，当这个程序执行时，在内存中拉伸后一定是要恢复原状的。想要脱这种二进制壳，需要跟着它的汇编指令执行到在内存中展开后，将内存dump出来，再修改OEP到正常程序的入口点，即可完成脱壳。本节课我们就来完成对这种二进制壳的编写。</p>
+<span id="more"></span>
+
+<h1 id="概述"><a href="#概述" class="headerlink" title="概述"></a>概述</h1><p><u>特别说明，在本篇文章中，壳程序称为<strong>shell</strong>，准备加密的程序称为<strong>src</strong>。</u></p>
+<p>对于这种二进制壳，有以下两种编写方法：</p>
+<p><strong>一、将PE文件中的各种表移动出来，再加密（本节课不做这个）</strong></p>
+<ol>
+<li>新增一个节，移动各种表</li>
+<li>对原来PE文件加密</li>
+<li>这时候程序还不能跑起来，因为OEP还在被加密的文件中，系统不认识，需要在最后追加一段代码</li>
+<li>这个代码作用为解密，解完密后跳转到原来的OEP</li>
+</ol>
+<p>但这时候有一个问题：在解密代码中有可能会用到别的DLL的函数，这个DLL又可能还没有被导入进来，或者原来的PE文件压根没有这个DLL文件要导入，因此需要自己在解密代码中导入需要用到的DLL。</p>
+<p>还有一个问题，解密代码中会有可能有全局变量，地址都是写死的，若解密代码没有加到预定的位置，就不能用了。这种情况需要使用win32汇编来编写解密代码。</p>
+<p><strong>二、不移动各种表，直接加密整个文件</strong></p>
+<ol>
+<li>将SRC文件读入内存，加密</li>
+<li>将加密后的文件追加到Shell文件新增的节中</li>
+</ol>
+<p>此时加壳结束。这时生成的程序中，被加密的SRC程序就是一堆被加密的数据，静态分析是看不出来的，但是动态分析一步一步跟是可以分析的。</p>
+<p>现在有一个问题，这个程序的主体是壳子程序，双击之后跑起来的是壳子，不是被加密的SRC程序。因此要在壳子程序中写解壳程序。因此完成这个加壳的过程，需要加壳程序与解壳程序两步。</p>
+<h1 id="加壳程序的编写"><a href="#加壳程序的编写" class="headerlink" title="加壳程序的编写"></a>加壳程序的编写</h1><p>步骤如下：</p>
+<ol>
+<li>获取Shell程序的路径</li>
+<li>获取src程序的路径</li>
+<li>将src程序读取到内存中，加密</li>
+<li>在Shell程序中新增一个节，并将加密后的src程序追加到Shell程序的新增节中</li>
+<li>加壳完毕</li>
+</ol>
+<p>图解如下：</p>
+<p><img src="/2022/10/19/Win32%EF%BC%9A%E5%8A%A0%E5%AF%86%E5%A3%B3%E7%9A%84%E7%BC%96%E5%86%99/1.PNG"></p>
+<p>此时生成的文件还是原来的那个壳子程序，仅仅是在一个新增的节中写入了一堆数据，根本看不到我们加密的程序，只用静态分析的话是无法分析出我们加密的程序的，同时如果被加密的程序是病毒的话，杀毒软件也无法杀死我们的程序（文件免杀）。</p>
+<p>加密程序代码如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//代码实现软件加壳，其中拉伸、增加节、还原的函数代码在前面几节课中已经给出</span></span><br><span class="line"><span class="type">void</span> <span class="title function_">Add_Protect</span><span class="params">(<span class="type">char</span>* shell_Filename, <span class="type">char</span>* src_Filename)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="comment">//1、获得shell壳子程序路径，已经在参数中给出</span></span><br><span class="line">	</span><br><span class="line">	<span class="comment">//2、在shell程序中新增一个节</span></span><br><span class="line">    <span class="type">char</span>* shell_ImageBuffer = File_To_Image(shell_Filename);           <span class="comment">//拉伸</span></span><br><span class="line">	<span class="type">char</span>* shell_ImageBuffer2 = AddSection(shell_ImageBuffer, <span class="number">0x100000</span>);</span><br><span class="line">	<span class="type">char</span>* shell_NewBuffer = image_to_file(shell_ImageBuffer2);</span><br><span class="line"></span><br><span class="line">	dos_header* pdh = (dos_header*)shell_NewBuffer;</span><br><span class="line">	pe_header* pph = (pe_header*)(pdh-&gt;e_lfanew + <span class="number">4</span> + (<span class="type">int</span>)pdh);</span><br><span class="line">	optional_pe_header* poph = (optional_pe_header*)((<span class="type">int</span>)(pdh-&gt;e_lfanew) + <span class="number">4</span> + <span class="number">20</span> + (<span class="type">int</span>)pdh);</span><br><span class="line">	image_section_header* pish = (image_section_header*)(pph-&gt;SizeOfOptionalHeader + (<span class="type">int</span>)poph);</span><br><span class="line"></span><br><span class="line">	<span class="comment">//3、获取src程序路径，已经在参数中给出</span></span><br><span class="line"></span><br><span class="line">	<span class="comment">//4、将src程序读取到内存中，加密</span></span><br><span class="line">	<span class="type">char</span>* src_Buffer = ReadMem_Exe(src_Filename);</span><br><span class="line">	FILE* src_fp = fopen(src_Filename, <span class="string">&quot;rb&quot;</span>);</span><br><span class="line">	<span class="type">int</span> src_size = getlength(src_fp);</span><br><span class="line">	<span class="comment">//这里应该是加密函数，对src文件进行加密，这里为了简便起见，只做取反运算</span></span><br><span class="line">	<span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>; i &lt; src_size; i++)</span><br><span class="line">	&#123;</span><br><span class="line">		*(src_Buffer + i) = ~(*(src_Buffer + i));</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">//5、将加密后的src程序追加到shell程序中新增的节中</span></span><br><span class="line">	<span class="comment">//定位到shell程序最后一个节</span></span><br><span class="line">	<span class="type">char</span>* src_Section = (<span class="type">char</span>*)((pish + pph-&gt;NumberOfSection - <span class="number">1</span>)-&gt;PointerToRawData + (<span class="type">int</span>)shell_NewBuffer);</span><br><span class="line">	<span class="built_in">memcpy</span>(src_Section, src_Buffer, src_size);</span><br><span class="line"></span><br><span class="line">	<span class="comment">//6、存盘</span></span><br><span class="line">	<span class="type">int</span> size = <span class="number">0</span>;</span><br><span class="line">	size = (<span class="type">int</span>)((pish + pph-&gt;NumberOfSection - <span class="number">1</span>)-&gt;PointerToRawData) + (<span class="type">int</span>)((pish + pph-&gt;NumberOfSection - <span class="number">1</span>)-&gt;SizeOfRawData);</span><br><span class="line">	FILE* pfp = fopen(<span class="string">&quot;C:\\Documents and Settings\\easy\\桌面\\Shell_test.exe&quot;</span>, <span class="string">&quot;wb&quot;</span>);</span><br><span class="line">	fwrite(shell_NewBuffer, size, <span class="number">1</span>, pfp);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//将文件读入内存中，并返回该块内存首地址</span></span><br><span class="line"><span class="type">char</span>* <span class="title function_">ReadMem_Exe</span><span class="params">(<span class="type">char</span>* Filename)</span></span><br><span class="line">&#123;</span><br><span class="line">	FILE* fp = <span class="literal">NULL</span>;</span><br><span class="line">	<span class="type">int</span> size = <span class="number">0</span>;</span><br><span class="line">	fp = fopen(Filename, <span class="string">&quot;rb&quot;</span>);</span><br><span class="line">	<span class="keyword">if</span>(!fp)</span><br><span class="line">	&#123;</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">&quot;无法打开 EXE 文件!\n&quot;</span>);</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	size = getlength(fp);</span><br><span class="line">	<span class="type">char</span>* FileBuffer = (<span class="type">char</span>*)<span class="built_in">malloc</span>(size);</span><br><span class="line">	fread(FileBuffer, size, <span class="number">1</span>, fp);</span><br><span class="line">	fclose(fp);</span><br><span class="line">	<span class="keyword">return</span> FileBuffer;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">//获取文件大小</span></span><br><span class="line"><span class="type">int</span> <span class="title function_">getlength</span><span class="params">(FILE* fp)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="type">int</span> size = <span class="number">0</span>;</span><br><span class="line">	fseek(fp, <span class="number">0</span>, SEEK_END);</span><br><span class="line">	size = ftell(fp);</span><br><span class="line">	fseek(fp, <span class="number">0</span>, SEEK_SET);</span><br><span class="line">	<span class="keyword">return</span> size;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>但是，想要这个文件运行起来后执行我们的加密程序，还需要下面的解密过程。</p>
+<h1 id="解密过程的编写"><a href="#解密过程的编写" class="headerlink" title="解密过程的编写"></a>解密过程的编写</h1><p>解密过程的代码实际上就是壳子程序的代码</p>
+<ol>
+<li><p>获取shell程序的路径</p>
+</li>
+<li><p>获取src的数据</p>
+<p>(1). 定位到shell文件最后一个节</p>
+<p>(2). 将数据取出，并解密</p>
+</li>
+<li><p>拉伸PE：将解密后的PE文件在内存中拉伸，并存储到缓冲区中</p>
+</li>
+<li><p>以挂起方式运行shell程序</p>
+<p>(1). 以挂起方式创建shell进程，并得到主线程的context</p>
+<p>(2). 卸载外壳程序的文件镜像(<strong>ZwUnmapViewOfSection</strong>函数)。卸载内存镜像后，得到一个干净的4GB空间，可以直接从内存启动一个进程，而不像CreateProcess一样涉及从磁盘上读取</p>
+<p>(3). 在指定的位置(src的ImageBase)申请指定大小(src的SizeOfImage)的内存(<strong>VirtualAllocEx</strong>函数)</p>
+<p>(4). 如果创建失败，查看src是否包含重定位表，如果包含重定位表，就在任意位置申请src的SizeOfImage大小的内存，然后修复重定位表</p>
+<p>(5). 如果在指定位置申请内存失败，并且没有重定位表的数据，直接返回失败</p>
+<p>(6). 如果内存申请成功，将新的数据复制到内存中</p>
+<p>(7). 修正运行环境的基址和入口地址</p>
+<p>(8). 恢复主线程执行</p>
+</li>
+</ol>
+<p>示例代码如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">//一个简单的壳程序</span></span><br><span class="line"><span class="meta">#<span class="keyword">pragma</span> comment(linker,<span class="string">&quot;/subsystem:\&quot;windows\&quot;  /entry:\&quot;mainCRTStartup\&quot;&quot;</span>   ) </span></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">(<span class="type">void</span>)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="comment">//一、获取SHELL程序的路径</span></span><br><span class="line">	<span class="type">char</span>* shell_path;</span><br><span class="line">	shell_path = _getcwd(<span class="literal">NULL</span>, <span class="number">0</span>);</span><br><span class="line">	<span class="comment">//将上面获得的路径中的&#x27;\&#x27;变成&#x27;/&#x27;</span></span><br><span class="line">	<span class="keyword">for</span>(<span class="type">int</span> j = <span class="number">0</span>; j &lt; <span class="built_in">strlen</span>(shell_path); j++)</span><br><span class="line">	&#123;</span><br><span class="line">		<span class="keyword">if</span>(shell_path[j] == <span class="string">&#x27;\\&#x27;</span>)</span><br><span class="line">		&#123;</span><br><span class="line">			shell_path[j] = <span class="string">&#x27;/&#x27;</span>;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="built_in">strcat</span>(shell_path, <span class="string">&quot;/Shell_test.exe&quot;</span>);</span><br><span class="line"></span><br><span class="line">	<span class="comment">//二、获得SRC数据</span></span><br><span class="line">	<span class="comment">//将shell程序读入内存</span></span><br><span class="line">	<span class="type">char</span>* shell_FileBuffer = ReadMem_Exe(shell_path); </span><br><span class="line">	<span class="keyword">if</span>(!shell_FileBuffer)</span><br><span class="line">	&#123;</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">&quot;读取文件失败\n&quot;</span>);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">//定位各个文件头部分</span></span><br><span class="line">	dos_header* pdh = (dos_header*)shell_FileBuffer;</span><br><span class="line">	pe_header* pph = (pe_header*)(pdh-&gt;e_lfanew + <span class="number">4</span> + (<span class="type">int</span>)pdh);</span><br><span class="line">	optional_pe_header* poph = (optional_pe_header*)((<span class="type">int</span>)(pdh-&gt;e_lfanew) + <span class="number">4</span> + <span class="number">20</span> + (<span class="type">int</span>)pdh);</span><br><span class="line">	image_section_header* pish = (image_section_header*)(pph-&gt;SizeOfOptionalHeader + (<span class="type">int</span>)poph);</span><br><span class="line">	<span class="comment">//定位最后一个节</span></span><br><span class="line">	<span class="type">char</span>* Last_Section = (<span class="type">char</span>*)((pish + pph-&gt;NumberOfSection - <span class="number">1</span>)-&gt;PointerToRawData + (<span class="type">int</span>)shell_FileBuffer);</span><br><span class="line">	<span class="comment">//将最后一个节的数据取出来并解密，放进缓冲区中</span></span><br><span class="line">	<span class="comment">//解密</span></span><br><span class="line">	<span class="keyword">for</span>(<span class="type">int</span> i = <span class="number">0</span>; i &lt; <span class="number">0x100000</span>; i++)</span><br><span class="line">	&#123;</span><br><span class="line">		*(Last_Section + i) = ~(*(Last_Section + i));</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="comment">//定位各个文件头部分</span></span><br><span class="line">	dos_header* src_pdh = (dos_header*)Last_Section;</span><br><span class="line">	pe_header* src_pph = (pe_header*)(src_pdh-&gt;e_lfanew + <span class="number">4</span> + (<span class="type">int</span>)src_pdh);</span><br><span class="line">	optional_pe_header* src_poph = (optional_pe_header*)((<span class="type">int</span>)(src_pdh-&gt;e_lfanew) + <span class="number">4</span> + <span class="number">20</span> + (<span class="type">int</span>)src_pdh);</span><br><span class="line">	<span class="type">int</span> src_size = src_poph-&gt;SizeOfImage;					 <span class="comment">//获取src的SizeOfImage</span></span><br><span class="line">	<span class="type">char</span>* src_ImageBase = (<span class="type">char</span>*)src_poph-&gt;ImageBase;        <span class="comment">//获取src的ImageBase</span></span><br><span class="line">	<span class="type">char</span>* src_FileBuffer = (<span class="type">char</span>*)<span class="built_in">malloc</span>(src_size);</span><br><span class="line">	<span class="built_in">memcpy</span>(src_FileBuffer, Last_Section, src_size);</span><br><span class="line"></span><br><span class="line">	<span class="comment">//三、拉伸PE</span></span><br><span class="line">	<span class="type">char</span>* src_ImageBuffer = File_To_Image(src_FileBuffer);</span><br><span class="line"></span><br><span class="line">	<span class="comment">//四、以挂起方式运行Shell进程，注意是壳子本身这个进程!</span></span><br><span class="line">	<span class="comment">//0、以挂起方式创建Shell进程</span></span><br><span class="line">	STARTUPINFO ie_si = &#123;<span class="number">0</span>&#125;;   		</span><br><span class="line">	PROCESS_INFORMATION ie_pi;		</span><br><span class="line">	ie_si.cb = <span class="keyword">sizeof</span>(ie_si);		</span><br><span class="line"></span><br><span class="line">	CreateProcess(</span><br><span class="line">		<span class="literal">NULL</span>, </span><br><span class="line">		shell_path, </span><br><span class="line">		<span class="literal">NULL</span>, 		</span><br><span class="line">		<span class="literal">NULL</span>,  		</span><br><span class="line">		FALSE,                   		</span><br><span class="line">		CREATE_SUSPENDED,     		</span><br><span class="line">		<span class="literal">NULL</span>,                    		</span><br><span class="line">		<span class="literal">NULL</span>,                    		</span><br><span class="line">		&amp;ie_si,                  		</span><br><span class="line">		&amp;ie_pi                  		</span><br><span class="line">		);	</span><br><span class="line"></span><br><span class="line">	<span class="comment">//1、获得外壳程序的Context，留着后面备用</span></span><br><span class="line">	CONTEXT context;</span><br><span class="line">	context.ContextFlags = CONTEXT_FULL;</span><br><span class="line">	::GetThreadContext(ie_pi.hThread,&amp;context);</span><br><span class="line"></span><br><span class="line">	<span class="comment">//2、卸载外壳程序的文件镜像(ZwUnmapViewOfSection)</span></span><br><span class="line">	<span class="comment">// 获取 ZwUnmapViewOfSection 函数指针</span></span><br><span class="line">	HMODULE hModuleNt = LoadLibrary(<span class="string">&quot;ntdll.dll&quot;</span>);</span><br><span class="line">	<span class="keyword">if</span> (hModuleNt == <span class="literal">NULL</span>)</span><br><span class="line">	&#123;</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">&quot;获取ntdll句柄失败\n&quot;</span>);</span><br><span class="line">		TerminateThread(ie_pi.hThread, <span class="number">0</span>);</span><br><span class="line">		<span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">typedef</span> <span class="title function_">DWORD</span><span class="params">(WINAPI *_TZwUnmapViewOfSection)</span><span class="params">(HANDLE, PVOID)</span>;</span><br><span class="line">	_TZwUnmapViewOfSection pZwUnmapViewOfSection = (_TZwUnmapViewOfSection)GetProcAddress(hModuleNt, <span class="string">&quot;ZwUnmapViewOfSection&quot;</span>);</span><br><span class="line">	<span class="keyword">if</span> (pZwUnmapViewOfSection == <span class="literal">NULL</span>)</span><br><span class="line">	&#123;</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">&quot;获取 ZwUnmapViewOfSection 函数指针失败\n&quot;</span>);</span><br><span class="line">		TerminateThread(ie_pi.hThread, <span class="number">0</span>);</span><br><span class="line">		<span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	pZwUnmapViewOfSection(ie_pi.hProcess, GetModuleHandle(<span class="literal">NULL</span>));</span><br><span class="line"></span><br><span class="line">	<span class="comment">//3、在指定的位置(src的ImageBase)申请指定大小(src的SizeOfImage)的内存(VirtualAllocEx)</span></span><br><span class="line">	LPVOID pImageBase = VirtualAllocEx(ie_pi.hProcess, (LPVOID)src_ImageBase, src_size, MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);</span><br><span class="line">	<span class="keyword">if</span> (pImageBase != src_ImageBase)</span><br><span class="line">	&#123;</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">&quot;VirtualAllocEx 错误码: 0x%X\n&quot;</span>, GetLastError()); <span class="comment">// 0x1e7 试图访问无效地址</span></span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">&quot;申请到的指针: 0x%X, 期望的地址: 0x%X\n&quot;</span>, (DWORD)pImageBase, src_ImageBase);</span><br><span class="line">		TerminateThread(ie_pi.hThread, <span class="number">0</span>);</span><br><span class="line">		<span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">//4、如果成功，将Src的PE文件拉伸 复制到该空间中</span></span><br><span class="line">	<span class="comment">//memcpy(src_ImageBase, src_ImageBuffer, src_size);</span></span><br><span class="line">	<span class="type">int</span> flag = WriteProcessMemory(ie_pi.hProcess, (LPVOID)src_ImageBase, src_ImageBuffer, src_size, <span class="literal">NULL</span>);</span><br><span class="line">	<span class="keyword">if</span>(!flag)</span><br><span class="line">	&#123;</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">&quot;写入源程序内存镜像失败\n&quot;</span>);</span><br><span class="line">		TerminateThread(ie_pi.hThread, <span class="number">0</span>);</span><br><span class="line">		<span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="comment">//5、修改外壳程序的Context</span></span><br><span class="line">	<span class="comment">//将Context的OPE 改成 Src的OEP</span></span><br><span class="line">	context.Eax = (<span class="type">unsigned</span> <span class="type">long</span>)(src_poph-&gt;AddressOfEntryPoint + src_ImageBase);</span><br><span class="line">	<span class="comment">//将Context的ImageBase 改成 Src的ImageBase</span></span><br><span class="line">	WriteProcessMemory(ie_pi.hProcess, (LPVOID)(context.Ebx + <span class="number">8</span>), &amp;src_ImageBase, <span class="number">4</span>, <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">	<span class="comment">//6、设置Context 并恢复主线程</span></span><br><span class="line">	context.ContextFlags = CONTEXT_FULL;</span><br><span class="line">	SetThreadContext(ie_pi.hThread, &amp;context);</span><br><span class="line">	ResumeThread(ie_pi.hThread);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><img src="/2022/10/19/Win32%EF%BC%9A%E5%8A%A0%E5%AF%86%E5%A3%B3%E7%9A%84%E7%BC%96%E5%86%99/2.PNG"></p>
+<p>下面的ShellCode.exe即为我们的壳子程序，MY_PE by win32.exe为我们要保护的程序，加壳后生成的程序为Shell_test.exe，双击这个生成的程序，发现正常运行我们被保护的程序：</p>
+<p><img src="/2022/10/19/Win32%EF%BC%9A%E5%8A%A0%E5%AF%86%E5%A3%B3%E7%9A%84%E7%BC%96%E5%86%99/3.PNG"></p>
+
+    </div>
+
+    
+    
+    
+
+<div>
+  
+    <div>
+    
+        <div style="text-align:center;color: #ccc;font-size:14px;">-------------已经读到底啦 <i class="fa fa-shower"></i> 感谢阅读哦~-------------</div>
+    
+</div>
+
+  
+</div>
+        <div class="reward-container">
+  <div>不赌天意，不猜人心.</div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="/images/wechatpay.jpg" alt="刘小白 微信支付">
+        <p>微信支付</p>
+      </div>
+      
+      <div style="display: inline-block;">
+        <img src="/images/alipay.jpg" alt="刘小白 支付宝">
+        <p>支付宝</p>
+      </div>
+
+  </div>
+</div>
+
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>刘小白
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="http://example.com/2022/10/19/Win32%EF%BC%9A%E5%8A%A0%E5%AF%86%E5%A3%B3%E7%9A%84%E7%BC%96%E5%86%99/" title="Win32：加密壳的编写">http://example.com/2022/10/19/Win32：加密壳的编写/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/Windows/" rel="tag"><i class="fa fa-tag"></i>
+		Windows</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/10/07/Win32%EF%BC%9A%E6%8C%82%E8%B5%B7%E6%96%B9%E5%BC%8F%E5%88%9B%E5%BB%BA%E8%BF%9B%E7%A8%8B/" rel="prev" title="Win32：挂起方式创建进程">
+      <i class="fa fa-chevron-left"></i> Win32：挂起方式创建进程
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%A6%82%E8%BF%B0"><span class="nav-number">1.</span> <span class="nav-text">概述</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%8A%A0%E5%A3%B3%E7%A8%8B%E5%BA%8F%E7%9A%84%E7%BC%96%E5%86%99"><span class="nav-number">2.</span> <span class="nav-text">加壳程序的编写</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%A7%A3%E5%AF%86%E8%BF%87%E7%A8%8B%E7%9A%84%E7%BC%96%E5%86%99"><span class="nav-number">3.</span> <span class="nav-text">解密过程的编写</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="刘小白"
+      src="/images/me.jpg">
+  <p class="site-author-name" itemprop="name">刘小白</p>
+  <div class="site-description" itemprop="description">Windows、逆向、C/C++、学习、生活</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">18</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">4</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="">
+    <a target="_blank" class="social-link" href="/atom.xml" style="color: burlywood;">
+      <span class="icon">
+        <i class="fa fa-rss"></i>
+      </span>
+      <span class="label">RSS</span>
+    </a>
+  </div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="mailto:1716281594@qq.com" title="E-Mail → mailto:1716281594@qq.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://github.com/lmc1997" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;lmc1997" rel="noopener" target="_blank"><i class="fa fa-star fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2022 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">刘小白</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  
+  <script color='0,0,0' opacity='0.5' zIndex='-1' count='150' src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"model":{"jsonPath":"/live2dw/assets/wanko.model.json"},"display":{"position":"right","width":150,"height":300},"mobile":{"show":true},"log":false});</script></body>
+</html>
+<!-- 页面点击小红心 -->
+<script type="text/javascript" src="/js/src/clicklove.js"></script>
+
