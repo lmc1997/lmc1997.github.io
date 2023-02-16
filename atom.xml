@@ -6,7 +6,7 @@
   <link href="http://example.com/atom.xml" rel="self"/>
   
   <link href="http://example.com/"/>
-  <updated>2023-02-13T10:16:47.296Z</updated>
+  <updated>2023-02-16T12:38:50.100Z</updated>
   <id>http://example.com/</id>
   
   <author>
@@ -17,13 +17,38 @@
   <generator uri="https://hexo.io/">Hexo</generator>
   
   <entry>
+    <title>保护模式：3、段描述符属性</title>
+    <link href="http://example.com/2023/02/16/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A3%E3%80%81%E6%AE%B5%E6%8F%8F%E8%BF%B0%E7%AC%A6%E5%B1%9E%E6%80%A7/"/>
+    <id>http://example.com/2023/02/16/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A3%E3%80%81%E6%AE%B5%E6%8F%8F%E8%BF%B0%E7%AC%A6%E5%B1%9E%E6%80%A7/</id>
+    <published>2023-02-16T12:38:00.000Z</published>
+    <updated>2023-02-16T12:38:50.100Z</updated>
+    
+    <content type="html"><![CDATA[<p>测试</p>]]></content>
+    
+    
+      
+      
+    <summary type="html">&lt;p&gt;测试&lt;/p&gt;
+</summary>
+      
+    
+    
+    
+    <category term="保护模式" scheme="http://example.com/categories/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F/"/>
+    
+    
+    <category term="保护模式" scheme="http://example.com/tags/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F/"/>
+    
+  </entry>
+  
+  <entry>
     <title>保护模式：2、段描述符与段选择子</title>
     <link href="http://example.com/2023/02/11/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A2%E3%80%81%E6%AE%B5%E6%8F%8F%E8%BF%B0%E7%AC%A6%E4%B8%8E%E6%AE%B5%E9%80%89%E6%8B%A9%E5%AD%90/"/>
     <id>http://example.com/2023/02/11/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A2%E3%80%81%E6%AE%B5%E6%8F%8F%E8%BF%B0%E7%AC%A6%E4%B8%8E%E6%AE%B5%E9%80%89%E6%8B%A9%E5%AD%90/</id>
     <published>2023-02-11T12:17:32.000Z</published>
-    <updated>2023-02-13T10:16:47.296Z</updated>
+    <updated>2023-02-16T12:35:16.000Z</updated>
     
-    <content type="html"><![CDATA[<p>在上一节课中，我们学习了段寄存器的结构，知道了段寄存器除了可见部分的16位段选择子，还有不可见的16位属性、32位基址和32位段限长。上一节课还遗留了一个问题：指令<strong>mov ds,ax</strong>是如何用16位的ax填写96位的段寄存器？这节课我们就来学习相关的知识</p><span id="more"></span><p>对于CPU来说，有两张很重要的表，分别是GDT表和IDT表（LDT表Windows没有使用），段描述符就存在段描述符表中。</p><h1 id="段描述符"><a href="#段描述符" class="headerlink" title="段描述符"></a>段描述符</h1><h1 id="段选择子"><a href="#段选择子" class="headerlink" title="段选择子"></a>段选择子</h1><p><img src="/2023/02/11/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A2%E3%80%81%E6%AE%B5%E6%8F%8F%E8%BF%B0%E7%AC%A6%E4%B8%8E%E6%AE%B5%E9%80%89%E6%8B%A9%E5%AD%90/6.PNG"></p>]]></content>
+    <content type="html"><![CDATA[<p>在上一节课中，我们学习了段寄存器的结构，知道了段寄存器除了可见部分的16位段选择子，还有不可见的16位属性、32位基址和32位段限长。上一节课还遗留了一个问题：指令<strong>mov ds,ax</strong>是如何用16位的ax填写96位的段寄存器？这节课我们就来学习相关的知识</p><span id="more"></span><p>对于CPU来说，有两张很重要的表，分别是GDT表和IDT表（LDT表Windows没有使用），段描述符就存在段描述符表中。当我们执行类似<strong>mov ds,ax</strong>的指令时，CPU会去查表，16位的ax叫做段选择子，CPU会根据ax的值来决定查找GDT（全局描述符表）还是LDT（局部描述符表），查找表的什么位置。</p><h1 id="段描述符"><a href="#段描述符" class="headerlink" title="段描述符"></a>段描述符</h1><p>段描述符结构如下：</p><p><img src="/2023/02/11/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A2%E3%80%81%E6%AE%B5%E6%8F%8F%E8%BF%B0%E7%AC%A6%E4%B8%8E%E6%AE%B5%E9%80%89%E6%8B%A9%E5%AD%90/1.PNG"></p><p>在这张图中，上面代表高4字节，下面代表低4字节，一共8字节64位。在这个结构中，具体哪些位代表什么意思，慢慢我们都会讲到，这里先不纠结。现在只需要做一件事：给定一个段描述符，能够按照上面的结构拆分出来。</p><p>那么GDT表位于什么地方呢？这张表又有多大呢？它们分别位于寄存器gdtr和gdtl中，在windbg中可以通过<strong>r gdtr</strong>和<strong>r gdtl</strong>来查看它们的值：（这里涉及到双机调试，网络上有很多资料，请自行参考）</p><p><img src="/2023/02/11/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A2%E3%80%81%E6%AE%B5%E6%8F%8F%E8%BF%B0%E7%AC%A6%E4%B8%8E%E6%AE%B5%E9%80%89%E6%8B%A9%E5%AD%90/2.PNG"></p><p>在这里我们看到了GDT表位于虚拟地址0x8003f000，大小为0x3ff，可以通过dq指令查看该位置的内容：</p><p><img src="/2023/02/11/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A2%E3%80%81%E6%AE%B5%E6%8F%8F%E8%BF%B0%E7%AC%A6%E4%B8%8E%E6%AE%B5%E9%80%89%E6%8B%A9%E5%AD%90/4.PNG"></p><p>dq为一次显示8字节（q代表QWORD），在第二项00cf9b00~0000ffff中，前面为高4字节，后面为低4字节，按照格式拆分如下：</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">拆分为64位二进制为：</span><br><span class="line">  0    0    c    f    9    b    0    0    0    0    0    0    f    f    f    f</span><br><span class="line">0000 0000 1100 1111 1001 1011 0000 0000 0000 0000 0000 0000 1111 1111 1111 1111</span><br><span class="line">Base31~24：0000 0000</span><br><span class="line">G：1</span><br><span class="line">D/B：1</span><br><span class="line">L：0</span><br><span class="line">AVL：0</span><br><span class="line">Limit19~16：1111</span><br><span class="line">P：1</span><br><span class="line">DPL：00</span><br><span class="line">S：1</span><br><span class="line">TYPE：1011</span><br><span class="line">Base23~16：0000 0000</span><br><span class="line">Base15~00：0000 0000 0000 0000</span><br><span class="line">Limit15~00：1111 1111 1111 1111</span><br></pre></td></tr></table></figure><p>不熟悉的请读者自行挑选段描述符练习拆分。</p><h1 id="段选择子"><a href="#段选择子" class="headerlink" title="段选择子"></a>段选择子</h1><p>段选择子结构如下：</p><p><img src="/2023/02/11/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A2%E3%80%81%E6%AE%B5%E6%8F%8F%E8%BF%B0%E7%AC%A6%E4%B8%8E%E6%AE%B5%E9%80%89%E6%8B%A9%E5%AD%90/5.PNG"></p><p>在上图结构中，第0-1位RPL代表请求特权级别，具体什么意思稍后讲，第2位TI代表要查询的表（在Windows下一般都是0，查询GDT表），第3-15位代表索引，表示要查询表的第几项。因此想要查看内存中对应的项的内容，地址应该是GDT表的基址+索引*8。</p><p>在上一节课我们提到了，指令<strong>mov ds,ax</strong>是如何用16位的ax填写96位的ds的呢？刨去段寄存器中可见的16位段选择子，还剩80位，因此CPU会用GDT中对应的段描述符来写入这80位。那么问题来了，这64位是如何填满80位的呢？后面再讲。</p><p>例如，对于段选择子0x23来讲，RPL&#x3D;3，index&#x3D;4，查找的是GDT表序号为4的项（序号从0开始）。</p><p>现在来看RPL，代表的意思是当前的特权级别，有四种情况分别是0 1 2 3。同时注意到在段描述符结构中有一个DPL，代表目标特权级别，意思可以理解成：你既然要访问我这个段，你最少是什么级别。因此，在CPU通过选择子查找到目标段描述符后，会将选择子的RPL与目标段描述符的DPL进行对比，当RPL的级别大于等于DPL时（数值上RPL小于等于DPL），才能够成功访问。例如RPL&#x3D;0，DPL&#x3D;3时就可以成功访问，反过来就不行。</p><p>总结一下，想要修改段寄存器的值，可以使用MOV指令，方法如下：</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">mov ax,0x20</span><br><span class="line">mov ds,ax</span><br></pre></td></tr></table></figure><p>此外，还可以使用LES、LSS、LDS、LFS、LGS指令修改寄存器。对于CS寄存器来讲，没有对应的LCS指令，因为CS为代码段，CS的修改就意味着EIP的更改。因此必须同时改变CS和EIP才行，具体指令后面讲。以LES指令为例，使用方法如下：</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">int main()</span><br><span class="line">&#123;</span><br><span class="line">       char buffer[6] = &#123;0&#125;;</span><br><span class="line">       __asm &#123;</span><br><span class="line">              // 高 2 字节加载到 ES 寄存器，低 4 字节复制到 ecx 寄存器。fword 表示 6 字节。</span><br><span class="line">              // LDS/LSS/LFS/LGS 用法是类似的。没有LCS指令，要修改CS，需要使用其它指令，这里就不给出。</span><br><span class="line">              // 这行指令是有坑的，不一定可以执行成功，取决于buffer中的值。</span><br><span class="line">              les ecx, fword ptr ds:[buffer]</span><br><span class="line">       &#125;</span><br><span class="line">       return 0;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>]]></content>
     
     
     <summary type="html">&lt;p&gt;在上一节课中，我们学习了段寄存器的结构，知道了段寄存器除了可见部分的16位段选择子，还有不可见的16位属性、32位基址和32位段限长。上一节课还遗留了一个问题：指令&lt;strong&gt;mov ds,ax&lt;/strong&gt;是如何用16位的ax填写96位的段寄存器？这节课我们就来学习相关的知识&lt;/p&gt;</summary>
