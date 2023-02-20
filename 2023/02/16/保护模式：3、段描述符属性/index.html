@@ -20,18 +20,25 @@
     var CONFIG = {"hostname":"example.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":null},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.json"};
   </script>
 
-  <meta name="description" content="测试">
+  <meta name="description" content="上一节课讲了段描述符和段选择子的结构，这节课来具体讲解段描述符里面的一些位具体代表什么，并且来解决上节课遗留的一个问题：64位的段描述符如何填入96位段寄存器中不可见的80位？">
 <meta property="og:type" content="article">
 <meta property="og:title" content="保护模式：3、段描述符属性">
 <meta property="og:url" content="http://example.com/2023/02/16/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A3%E3%80%81%E6%AE%B5%E6%8F%8F%E8%BF%B0%E7%AC%A6%E5%B1%9E%E6%80%A7/index.html">
 <meta property="og:site_name" content="刘小白的博客">
-<meta property="og:description" content="测试">
+<meta property="og:description" content="上一节课讲了段描述符和段选择子的结构，这节课来具体讲解段描述符里面的一些位具体代表什么，并且来解决上节课遗留的一个问题：64位的段描述符如何填入96位段寄存器中不可见的80位？">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/2023/02/16/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A3%E3%80%81%E6%AE%B5%E6%8F%8F%E8%BF%B0%E7%AC%A6%E5%B1%9E%E6%80%A7/1.PNG">
+<meta property="og:image" content="http://example.com/2023/02/16/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A3%E3%80%81%E6%AE%B5%E6%8F%8F%E8%BF%B0%E7%AC%A6%E5%B1%9E%E6%80%A7/2.PNG">
+<meta property="og:image" content="http://example.com/2023/02/16/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A3%E3%80%81%E6%AE%B5%E6%8F%8F%E8%BF%B0%E7%AC%A6%E5%B1%9E%E6%80%A7/4.PNG">
+<meta property="og:image" content="http://example.com/2023/02/16/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A3%E3%80%81%E6%AE%B5%E6%8F%8F%E8%BF%B0%E7%AC%A6%E5%B1%9E%E6%80%A7/5.PNG">
+<meta property="og:image" content="http://example.com/2023/02/16/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A3%E3%80%81%E6%AE%B5%E6%8F%8F%E8%BF%B0%E7%AC%A6%E5%B1%9E%E6%80%A7/6.PNG">
+<meta property="og:image" content="http://example.com/2023/02/16/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A3%E3%80%81%E6%AE%B5%E6%8F%8F%E8%BF%B0%E7%AC%A6%E5%B1%9E%E6%80%A7/7.PNG">
 <meta property="article:published_time" content="2023-02-16T12:38:00.000Z">
-<meta property="article:modified_time" content="2023-02-16T12:38:50.100Z">
+<meta property="article:modified_time" content="2023-02-20T13:02:34.070Z">
 <meta property="article:author" content="刘小白">
 <meta property="article:tag" content="保护模式">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/2023/02/16/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A3%E3%80%81%E6%AE%B5%E6%8F%8F%E8%BF%B0%E7%AC%A6%E5%B1%9E%E6%80%A7/1.PNG">
 
 <link rel="canonical" href="http://example.com/2023/02/16/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A3%E3%80%81%E6%AE%B5%E6%8F%8F%E8%BF%B0%E7%AC%A6%E5%B1%9E%E6%80%A7/">
 
@@ -138,7 +145,7 @@
   </li>
         <li class="menu-item menu-item-archives">
 
-    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">20</span></a>
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">21</span></a>
 
   </li>
       <li class="menu-item menu-item-search">
@@ -216,10 +223,16 @@
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
-              
 
-              <time title="创建时间：2023-02-16 20:38:00 / 修改时间：20:38:50" itemprop="dateCreated datePublished" datetime="2023-02-16T20:38:00+08:00">2023-02-16</time>
+              <time title="创建时间：2023-02-16 20:38:00" itemprop="dateCreated datePublished" datetime="2023-02-16T20:38:00+08:00">2023-02-16</time>
             </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-02-20 21:02:34" itemprop="dateModified" datetime="2023-02-20T21:02:34+08:00">2023-02-20</time>
+              </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
                 <i class="far fa-folder"></i>
@@ -241,7 +254,43 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p>测试</p>
+        <p>上一节课讲了段描述符和段选择子的结构，这节课来具体讲解段描述符里面的一些位具体代表什么，并且来解决上节课遗留的一个问题：64位的段描述符如何填入96位段寄存器中不可见的80位？</p>
+<span id="more"></span>
+
+<p>先来回顾一下段描述符的结构：</p>
+<p><img src="/2023/02/16/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A3%E3%80%81%E6%AE%B5%E6%8F%8F%E8%BF%B0%E7%AC%A6%E5%B1%9E%E6%80%A7/1.PNG"></p>
+<p>下面是段寄存器的结构：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">Segment&#123;</span><br><span class="line">	WORD Selector;		//段选择子（可见）16位</span><br><span class="line">	WORD Attributes;	//段属性  （不可见）16位</span><br><span class="line">	WORD Base;			//段起始地址  （不可见）32位</span><br><span class="line">	WORD Limit;			//段大小  （不可见）32位</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在填入段寄存器时，属性部分写入的是段描述符高4字节中8-23位，共16位；基址部分填入的是段描述符中的基址共32位。现在问题来了，段寄存器的limit部分需要32位，而在段描述符里面limit只有20位，该怎么填入呢？我们从段描述符的属性入手。</p>
+<h1 id="P位"><a href="#P位" class="headerlink" title="P位"></a>P位</h1><p>P位位于段描述符高4字节的第15位，决定了该描述符是否有效。对于一个段描述符，首先就要看它的P位是否为有效位。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">P=0	无效</span><br><span class="line">P=1	有效</span><br></pre></td></tr></table></figure>
+
+<p><img src="/2023/02/16/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A3%E3%80%81%E6%AE%B5%E6%8F%8F%E8%BF%B0%E7%AC%A6%E5%B1%9E%E6%80%A7/2.PNG"></p>
+<p>对于上图的GDT表来说，被标出来的部分大于等于8，就意味着P&#x3D;1，是有效的段描述符。</p>
+<h1 id="G位"><a href="#G位" class="headerlink" title="G位"></a>G位</h1><p>G位决定了该段的粒度，前面提到的如何用段描述符20位的limit填入段寄存器32位的limit，就是通过G位来决定的。在段描述符中，20位的limit最大值为FFFFF。</p>
+<p>G&#x3D;0时，limit单位是字节，也就是说该是多少就是多少。20位limit最大为FFFFF，前面补0即可，limit最大为000FFFFF。</p>
+<p>G &#x3D; 1时，limit单位是kb，也就是说，limit每加1，实际上加了1kb也就是FFF。因此limit范围是00000FFF ~ FFFFFFFF。（在后面补FFF）</p>
+<h1 id="S位"><a href="#S位" class="headerlink" title="S位"></a>S位</h1><p>在GDT表中，段描述符分为两类，一类是数据或代码段描述符，另一类是系统段描述符。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">S = 0时，该段描述符是系统段描述符</span><br><span class="line">S = 1时，该段描述符是代码段或数据段描述符</span><br></pre></td></tr></table></figure>
+
+<p><img src="/2023/02/16/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A3%E3%80%81%E6%AE%B5%E6%8F%8F%E8%BF%B0%E7%AC%A6%E5%B1%9E%E6%80%A7/4.PNG"></p>
+<p>在上图中，被标出来的部分的最后一个二进制位就是S位。</p>
+<h1 id="TYPE域"><a href="#TYPE域" class="headerlink" title="TYPE域"></a>TYPE域</h1><p>对于S位取不同的值，TYPE域各位有不同的涵义</p>
+<p><strong>1、S &#x3D; 1时，有两种情况，分别是数据段和代码段描述符</strong></p>
+<p>也就是说，在段描述符高4字节的8个16进制数中，第5个数是1001（9）或者1111（F）时，为数据段或者代码段描述符。如下图所示：</p>
+<p><img src="/2023/02/16/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A3%E3%80%81%E6%AE%B5%E6%8F%8F%E8%BF%B0%E7%AC%A6%E5%B1%9E%E6%80%A7/5.PNG"></p>
+<p>上图可以看出来又分了两种情况：</p>
+<p>1.1 当第11位 &#x3D; 0时，是数据段。也就是第6个16进制数 &lt; 8。A位代表是否已经被访问过（有没有被加载过）。W位代表是否可写。E位代表拓展方向。E &#x3D; 0时向上拓展，E &#x3D; 1时向下拓展。</p>
+<p>1.2 当第11位 &#x3D; 1时，是代码段。也就是第6个16进制数 &gt; 8。A位代表是否已经被访问过（有没有被加载过）。R位代表是否可读。C位是一致位。C &#x3D; 1时代表一致代码段，C &#x3D; 0时代表非一致代码段。具体C位什么意思，后续介绍。</p>
+<p>对于E位的拓展方向，解释如下图：</p>
+<p><img src="/2023/02/16/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A3%E3%80%81%E6%AE%B5%E6%8F%8F%E8%BF%B0%E7%AC%A6%E5%B1%9E%E6%80%A7/6.PNG"></p>
+<p>左边为E &#x3D; 0向上拓展（正常），右边为E &#x3D; 1向下拓展（不正常）。红色代表有效地址，也就是说可以访问的地址。因此与其说是向上或下拓展，不如说是取反。</p>
+<p>对于右边的红色部分具体有多大，还要看另外一个没有讲过的属性来决定，有两种可能分别是64kb和4GB，以后再说。（向下拓展基本没见过）</p>
+<p><strong>2、S &#x3D; 0时，为系统描述符</strong></p>
+<p>系统描述符又分为以下类型：</p>
+<p><img src="/2023/02/16/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A3%E3%80%81%E6%AE%B5%E6%8F%8F%E8%BF%B0%E7%AC%A6%E5%B1%9E%E6%80%A7/7.PNG"></p>
+<p>这里面描述的具体分类是什么意思，目前还用不到，后续会讲解。目前只要知道TYPE域各位的含意即可。</p>
 
     </div>
 
@@ -312,7 +361,10 @@
     <a href="/2023/02/11/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A2%E3%80%81%E6%AE%B5%E6%8F%8F%E8%BF%B0%E7%AC%A6%E4%B8%8E%E6%AE%B5%E9%80%89%E6%8B%A9%E5%AD%90/" rel="prev" title="保护模式：2、段描述符与段选择子">
       <i class="fa fa-chevron-left"></i> 保护模式：2、段描述符与段选择子
     </a></div>
-      <div class="post-nav-item"></div>
+      <div class="post-nav-item">
+    <a href="/2023/02/20/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A4%E3%80%81%E6%AE%B5%E6%9D%83%E9%99%90%E6%A3%80%E6%9F%A5/" rel="next" title="保护模式：4、段权限检查">
+      保护模式：4、段权限检查 <i class="fa fa-chevron-right"></i>
+    </a></div>
     </div>
       </footer>
     
@@ -371,6 +423,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#P%E4%BD%8D"><span class="nav-number">1.</span> <span class="nav-text">P位</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#G%E4%BD%8D"><span class="nav-number">2.</span> <span class="nav-text">G位</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#S%E4%BD%8D"><span class="nav-number">3.</span> <span class="nav-text">S位</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#TYPE%E5%9F%9F"><span class="nav-number">4.</span> <span class="nav-text">TYPE域</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -386,7 +439,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">20</span>
+          <span class="site-state-item-count">21</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
