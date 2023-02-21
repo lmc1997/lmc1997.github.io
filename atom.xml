@@ -6,7 +6,7 @@
   <link href="http://example.com/atom.xml" rel="self"/>
   
   <link href="http://example.com/"/>
-  <updated>2023-02-20T13:05:21.250Z</updated>
+  <updated>2023-02-21T11:05:47.509Z</updated>
   <id>http://example.com/</id>
   
   <author>
@@ -17,11 +17,11 @@
   <generator uri="https://hexo.io/">Hexo</generator>
   
   <entry>
-    <title>保护模式：4、段权限检查</title>
-    <link href="http://example.com/2023/02/20/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A4%E3%80%81%E6%AE%B5%E6%9D%83%E9%99%90%E6%A3%80%E6%9F%A5/"/>
-    <id>http://example.com/2023/02/20/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A4%E3%80%81%E6%AE%B5%E6%9D%83%E9%99%90%E6%A3%80%E6%9F%A5/</id>
-    <published>2023-02-20T13:04:29.000Z</published>
-    <updated>2023-02-20T13:05:21.250Z</updated>
+    <title>保护模式：5、代码间的跳转-段间跳转</title>
+    <link href="http://example.com/2023/02/21/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A5%E3%80%81%E4%BB%A3%E7%A0%81%E9%97%B4%E7%9A%84%E8%B7%B3%E8%BD%AC-%E6%AE%B5%E9%97%B4%E8%B7%B3%E8%BD%AC/"/>
+    <id>http://example.com/2023/02/21/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A5%E3%80%81%E4%BB%A3%E7%A0%81%E9%97%B4%E7%9A%84%E8%B7%B3%E8%BD%AC-%E6%AE%B5%E9%97%B4%E8%B7%B3%E8%BD%AC/</id>
+    <published>2023-02-21T11:04:59.000Z</published>
+    <updated>2023-02-21T11:05:47.509Z</updated>
     
     <content type="html"><![CDATA[<p>测试</p>]]></content>
     
@@ -31,6 +31,28 @@
     <summary type="html">&lt;p&gt;测试&lt;/p&gt;
 </summary>
       
+    
+    
+    
+    <category term="保护模式" scheme="http://example.com/categories/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F/"/>
+    
+    
+    <category term="保护模式" scheme="http://example.com/tags/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>保护模式：4、段权限检查</title>
+    <link href="http://example.com/2023/02/20/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A4%E3%80%81%E6%AE%B5%E6%9D%83%E9%99%90%E6%A3%80%E6%9F%A5/"/>
+    <id>http://example.com/2023/02/20/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A4%E3%80%81%E6%AE%B5%E6%9D%83%E9%99%90%E6%A3%80%E6%9F%A5/</id>
+    <published>2023-02-20T13:04:29.000Z</published>
+    <updated>2023-02-21T10:34:48.240Z</updated>
+    
+    <content type="html"><![CDATA[<p>测试</p><p>上节课讲了段描述符里面的一些位，先来复习一下：对于一个段描述符，先看它的P位是否有效，然后看它的S位和TYPE域来区分该段的类型。这节课继续来学习段描述符的其他位。</p><span id="more"></span><p>老规矩，还是先上段描述符的结构图，方面查看和记忆：</p><p><img src="/2023/02/20/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A4%E3%80%81%E6%AE%B5%E6%9D%83%E9%99%90%E6%A3%80%E6%9F%A5/1.PNG"></p><h1 id="D-x2F-B位"><a href="#D-x2F-B位" class="headerlink" title="D&#x2F;B位"></a>D&#x2F;B位</h1><p>D&#x2F;B位比较复杂，加载到不同的段寄存器中的影响是不一样的。</p><p><strong>1、段描述符加载到数据段如：DS、ES</strong></p><p>其含义代表的是段上限的大小。（这也就是昨天提到的向上向下拓展时候影响段上限的位）</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">D = 1，段上限为4GB</span><br><span class="line">D = 0，段上限为64KB</span><br></pre></td></tr></table></figure><p><img src="/2023/02/20/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A4%E3%80%81%E6%AE%B5%E6%9D%83%E9%99%90%E6%A3%80%E6%9F%A5/2.PNG"></p><p><strong>2、段描述符加载到代码段如CS</strong></p><p>影响的是默认的选址方式。</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">D = 1，默认采用32位寻址方式</span><br><span class="line">D = 0，默认采用16位寻址方式</span><br></pre></td></tr></table></figure><p>指令前缀67 改变寻址方式。</p><p><strong>3、段描述符加载到数据段如SS</strong></p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">D = 1，隐式堆栈访问指令（如：PUSH POP CALL） 使用32位堆栈指针寄存器ESP</span><br><span class="line">D = 0，隐式堆栈访问指令（如：PUSH POP CALL） 使用16位堆栈指针寄存器SP</span><br></pre></td></tr></table></figure><p>跟上面加载到CS道理其实差不多。</p><h1 id="段权限检查"><a href="#段权限检查" class="headerlink" title="段权限检查"></a>段权限检查</h1><p>先来回顾一下几个概念：</p><p><strong>RPL</strong>：请求特权级，存在于16位的段选择子中。</p><p><strong>DPL</strong>：描述了访问该段至少需要什么级别，存在于段描述符中。</p><p>那么如何查看程序处于几环？也就是说，如何查看CPU当前处于哪个级别呢？这里有一个新的概念：</p><p><strong>CPL</strong>：当前特权级，存在于CS和SS中存储的段选择子最后2位。</p><p>这个CPL的意义是，当前CPU执行到某一位置时CPU的级别。如下图：</p><p><img src="/2023/02/20/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A4%E3%80%81%E6%AE%B5%E6%9D%83%E9%99%90%E6%A3%80%E6%9F%A5/3.PNG"></p><p>当CPU执行到80527da8这个地址时，CS值为8（1000），CPL &#x3D; 0。</p><p>有些指令在CPL &#x3D; 3时不能使用，但是在CPL &#x3D; 0时可以使用。</p><p>那么，段权限检查需要满足什么条件才能算成功呢？</p><p>**CPL &lt;&#x3D; DPL 并且 RPL &lt;&#x3D; DPL (数值上的比较)**。注意两个条件必须要同时满足。</p><p><strong>特别说明</strong>：数据段的权限检查与代码段的权限检查不一样。上面的只适用于数据段的权限检查，代码段的权限是如何检查的，在以后的课程中会讲到。</p>]]></content>
+    
+    
+    <summary type="html">&lt;p&gt;测试&lt;/p&gt;
+&lt;p&gt;上节课讲了段描述符里面的一些位，先来复习一下：对于一个段描述符，先看它的P位是否有效，然后看它的S位和TYPE域来区分该段的类型。这节课继续来学习段描述符的其他位。&lt;/p&gt;</summary>
     
     
     
@@ -413,29 +435,6 @@
     
     
     <summary type="html">&lt;p&gt;这次来分析参数、返回值和数组在反汇编中的表现形式。&lt;/p&gt;</summary>
-    
-    
-    
-    <category term="逆向分析" scheme="http://example.com/categories/%E9%80%86%E5%90%91%E5%88%86%E6%9E%90/"/>
-    
-    
-    <category term="逆向分析" scheme="http://example.com/tags/%E9%80%86%E5%90%91%E5%88%86%E6%9E%90/"/>
-    
-    <category term="C" scheme="http://example.com/tags/C/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>逆向分析：循环语句</title>
-    <link href="http://example.com/2022/04/18/%E9%80%86%E5%90%91%E5%88%86%E6%9E%90%EF%BC%9A%E5%BE%AA%E7%8E%AF%E8%AF%AD%E5%8F%A5/"/>
-    <id>http://example.com/2022/04/18/%E9%80%86%E5%90%91%E5%88%86%E6%9E%90%EF%BC%9A%E5%BE%AA%E7%8E%AF%E8%AF%AD%E5%8F%A5/</id>
-    <published>2022-04-18T01:05:26.000Z</published>
-    <updated>2022-04-18T01:45:33.865Z</updated>
-    
-    <content type="html"><![CDATA[<p>上一次学习了全局变量和局部变量的特点，并分析了if语句在反汇编中的样子，今天来分析<strong>循环语句</strong>。</p><span id="more"></span><h1 id="do…while循环语句"><a href="#do…while循环语句" class="headerlink" title="do…while循环语句"></a>do…while循环语句</h1><p>do…while语句语法</p><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">do</span></span><br><span class="line">&#123;</span><br><span class="line"><span class="comment">//执行代码</span></span><br><span class="line">    </span><br><span class="line">&#125;<span class="keyword">while</span>(表达式)</span><br></pre></td></tr></table></figure><p>do…while语句反汇编</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">DO_BEGIN地址:</span><br><span class="line">影响标志位的指令</span><br><span class="line">jxx DO_BEGIN</span><br></pre></td></tr></table></figure><p>例如</p><p><img src="/2022/04/18/%E9%80%86%E5%90%91%E5%88%86%E6%9E%90%EF%BC%9A%E5%BE%AA%E7%8E%AF%E8%AF%AD%E5%8F%A5/1.PNG"></p><p>总结：</p><p>1、根据条件跳转指令所跳转到的地址，可以得到循环语句块的起始地址。</p><p>2、根据条件跳转指令所在的地址，可以得到循环语句块的结束地址。</p><p>3、条件跳转的逻辑与源码相同。</p><h1 id="while循环语句"><a href="#while循环语句" class="headerlink" title="while循环语句"></a>while循环语句</h1><p>while语句语法</p><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">while</span>(表达式)</span><br><span class="line">&#123;</span><br><span class="line"></span><br><span class="line"><span class="comment">//执行代码</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><p>while语句反汇编</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">WHILE_BEGIN:</span><br><span class="line">影响标志位的指令</span><br><span class="line">jxx WHILE_END ;条件成立跳转到循环语句块结尾处</span><br><span class="line">......</span><br><span class="line">jmp WHILE_BEGIN ;跳转到条件比较处</span><br><span class="line">WHILE_END:</span><br><span class="line"></span><br></pre></td></tr></table></figure><p>例如</p><p><img src="/2022/04/18/%E9%80%86%E5%90%91%E5%88%86%E6%9E%90%EF%BC%9A%E5%BE%AA%E7%8E%AF%E8%AF%AD%E5%8F%A5/2.PNG"></p><p>总结：</p><p>1、根据条件跳转指令所跳转到的地址，可以得到循环语句块的结束地址。</p><p>2、根据jmp指令所跳转到的地址，可以得到循环语句块的起始地址。</p><p>3、在还原while 比较时，条件跳转的逻辑与源码相反</p><h1 id="for循环语句"><a href="#for循环语句" class="headerlink" title="for循环语句"></a>for循环语句</h1><p>for语句语法</p><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span>(表达式<span class="number">1</span>；表达式<span class="number">2</span>；表达式<span class="number">3</span>)</span><br><span class="line">&#123;</span><br><span class="line"></span><br><span class="line"><span class="comment">//执行的代码</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure><p>for循环的执行次序</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">表达式1</span><br><span class="line">表达式2</span><br><span class="line">执行的代码(大括号里面的内容)</span><br><span class="line">表达式3</span><br><span class="line"></span><br><span class="line">表达式2 //如果表达式2成立</span><br><span class="line">执行的代码(大括号里面的内容)</span><br><span class="line">表达式3</span><br><span class="line"></span><br><span class="line">表达式2 //如果表达式2成立</span><br><span class="line">执行的代码(大括号里面的内容)</span><br><span class="line">表达式3</span><br><span class="line"></span><br><span class="line">表达式2 //如果不成立</span><br><span class="line">跳出循环</span><br></pre></td></tr></table></figure><p>例如</p><p><img src="/2022/04/18/%E9%80%86%E5%90%91%E5%88%86%E6%9E%90%EF%BC%9A%E5%BE%AA%E7%8E%AF%E8%AF%AD%E5%8F%A5/3.PNG"></p><p>总结：</p><p>1、第一个jmp 指令之前为赋初值部分。</p><p>2、第一个jmp 指令所跳转的地址为循环条件判定部分起始。</p><p>3、判断条件后面的跳转指令条件成立时跳转的循环体外面。</p><p>4、条件判断跳转指令所指向的地址上面有一个jmp，jmp地址为表达式3的起始位置。</p>]]></content>
-    
-    
-    <summary type="html">&lt;p&gt;上一次学习了全局变量和局部变量的特点，并分析了if语句在反汇编中的样子，今天来分析&lt;strong&gt;循环语句&lt;/strong&gt;。&lt;/p&gt;</summary>
     
     
     
