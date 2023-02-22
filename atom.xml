@@ -6,7 +6,7 @@
   <link href="http://example.com/atom.xml" rel="self"/>
   
   <link href="http://example.com/"/>
-  <updated>2023-02-21T11:05:47.509Z</updated>
+  <updated>2023-02-22T13:06:59.841Z</updated>
   <id>http://example.com/</id>
   
   <author>
@@ -21,16 +21,12 @@
     <link href="http://example.com/2023/02/21/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A5%E3%80%81%E4%BB%A3%E7%A0%81%E9%97%B4%E7%9A%84%E8%B7%B3%E8%BD%AC-%E6%AE%B5%E9%97%B4%E8%B7%B3%E8%BD%AC/"/>
     <id>http://example.com/2023/02/21/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A5%E3%80%81%E4%BB%A3%E7%A0%81%E9%97%B4%E7%9A%84%E8%B7%B3%E8%BD%AC-%E6%AE%B5%E9%97%B4%E8%B7%B3%E8%BD%AC/</id>
     <published>2023-02-21T11:04:59.000Z</published>
-    <updated>2023-02-21T11:05:47.509Z</updated>
+    <updated>2023-02-22T13:06:59.841Z</updated>
     
-    <content type="html"><![CDATA[<p>测试</p>]]></content>
+    <content type="html"><![CDATA[<p>上节课我们学习了访问数据段的时候，段权限是如何检查的，即：**CPL &lt;&#x3D; DPL 并且 RPL &lt;&#x3D; DPL (数值上的比较)**。后面我们来学习访问代码段时，段的权限是如何检查的。</p><span id="more"></span><p>通过前面的学习，我们已经知道了段寄存器共有八个，分别是：ES、CS、SS、DS、FS、GS、LDTR和TR。当我们想要修改段寄存器的值时，有<strong>MOV</strong>指令的类似于<strong>LES</strong>的指令。</p><p>但是，对于CS代码段寄存器，却不能用上面这两种方式修改。因为CS的改变意味着EIP的改变，想要改变CS，就必须同时改变EIP（段间跳转），但是可以只改变EIP而不改变CS（段内跳转）。CS.Base + EIP &#x3D; 真正要执行的地址。因此，代码段间的跳转，本质上就是CS寄存器的修改。</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">同时修改CS和EIP的指令（段间跳转）：JMP FAR / CALL FAR / RETF / INT /IRETED</span><br><span class="line">只修改EIP的指令（段内跳转）：JMP / CALL / JCC / RET</span><br></pre></td></tr></table></figure><p>既然是跳转到另一个代码段，那么就可以根据目标代码段的种类分为两种情况：一致代码段和非一致代码段。具体怎么区分两种代码段，请参见前面的课程。</p><p>下面我们就来讲解代码间的跳转（<strong>JMP FAR</strong>）的执行流程：</p><p>首先需要明确的是，JMP FAR指令后面需要跟6个字节，例如：JMP 0x20:0x004183D7，其中，高2字节为0x20，代表段选择子，而低4字节为0x004183D7，代表段内偏移。而JMP指令为段内长跳转，JMP后面跟4字节，为跳转的目标地址。</p><p>以指令<strong>JMP 0x20:0x004183D7</strong>为例，执行流程如下：</p><p><strong>1、拆分段选择子</strong></p><p>0x20为0010 0000，RPL &#x3D; 0，TI &#x3D; 0。查GDT表，index &#x3D; 4</p><p><strong>2、判断该段描述符的种类</strong></p><p>通过index找到GDT中对应的段描述符，只有如下四种段描述符可以跳转成功：</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">代码段、调用门、TSS任务段、任务门（目前只分析代码段）</span><br></pre></td></tr></table></figure><p><strong>3、权限检查</strong></p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">如果是非一致代码段，要求:CPL == DPL 并且 RPL &lt;= DPL。（windows基本上使用的都是这个）</span><br><span class="line">如果是一致代码段，要求:CPL &gt;= DPL。</span><br></pre></td></tr></table></figure>]]></content>
     
     
-      
-      
-    <summary type="html">&lt;p&gt;测试&lt;/p&gt;
-</summary>
-      
+    <summary type="html">&lt;p&gt;上节课我们学习了访问数据段的时候，段权限是如何检查的，即：**CPL &amp;lt;&amp;#x3D; DPL 并且 RPL &amp;lt;&amp;#x3D; DPL (数值上的比较)**。后面我们来学习访问代码段时，段的权限是如何检查的。&lt;/p&gt;</summary>
     
     
     
@@ -46,13 +42,12 @@
     <link href="http://example.com/2023/02/20/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A4%E3%80%81%E6%AE%B5%E6%9D%83%E9%99%90%E6%A3%80%E6%9F%A5/"/>
     <id>http://example.com/2023/02/20/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A4%E3%80%81%E6%AE%B5%E6%9D%83%E9%99%90%E6%A3%80%E6%9F%A5/</id>
     <published>2023-02-20T13:04:29.000Z</published>
-    <updated>2023-02-21T10:34:48.240Z</updated>
+    <updated>2023-02-21T11:41:29.127Z</updated>
     
-    <content type="html"><![CDATA[<p>测试</p><p>上节课讲了段描述符里面的一些位，先来复习一下：对于一个段描述符，先看它的P位是否有效，然后看它的S位和TYPE域来区分该段的类型。这节课继续来学习段描述符的其他位。</p><span id="more"></span><p>老规矩，还是先上段描述符的结构图，方面查看和记忆：</p><p><img src="/2023/02/20/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A4%E3%80%81%E6%AE%B5%E6%9D%83%E9%99%90%E6%A3%80%E6%9F%A5/1.PNG"></p><h1 id="D-x2F-B位"><a href="#D-x2F-B位" class="headerlink" title="D&#x2F;B位"></a>D&#x2F;B位</h1><p>D&#x2F;B位比较复杂，加载到不同的段寄存器中的影响是不一样的。</p><p><strong>1、段描述符加载到数据段如：DS、ES</strong></p><p>其含义代表的是段上限的大小。（这也就是昨天提到的向上向下拓展时候影响段上限的位）</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">D = 1，段上限为4GB</span><br><span class="line">D = 0，段上限为64KB</span><br></pre></td></tr></table></figure><p><img src="/2023/02/20/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A4%E3%80%81%E6%AE%B5%E6%9D%83%E9%99%90%E6%A3%80%E6%9F%A5/2.PNG"></p><p><strong>2、段描述符加载到代码段如CS</strong></p><p>影响的是默认的选址方式。</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">D = 1，默认采用32位寻址方式</span><br><span class="line">D = 0，默认采用16位寻址方式</span><br></pre></td></tr></table></figure><p>指令前缀67 改变寻址方式。</p><p><strong>3、段描述符加载到数据段如SS</strong></p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">D = 1，隐式堆栈访问指令（如：PUSH POP CALL） 使用32位堆栈指针寄存器ESP</span><br><span class="line">D = 0，隐式堆栈访问指令（如：PUSH POP CALL） 使用16位堆栈指针寄存器SP</span><br></pre></td></tr></table></figure><p>跟上面加载到CS道理其实差不多。</p><h1 id="段权限检查"><a href="#段权限检查" class="headerlink" title="段权限检查"></a>段权限检查</h1><p>先来回顾一下几个概念：</p><p><strong>RPL</strong>：请求特权级，存在于16位的段选择子中。</p><p><strong>DPL</strong>：描述了访问该段至少需要什么级别，存在于段描述符中。</p><p>那么如何查看程序处于几环？也就是说，如何查看CPU当前处于哪个级别呢？这里有一个新的概念：</p><p><strong>CPL</strong>：当前特权级，存在于CS和SS中存储的段选择子最后2位。</p><p>这个CPL的意义是，当前CPU执行到某一位置时CPU的级别。如下图：</p><p><img src="/2023/02/20/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A4%E3%80%81%E6%AE%B5%E6%9D%83%E9%99%90%E6%A3%80%E6%9F%A5/3.PNG"></p><p>当CPU执行到80527da8这个地址时，CS值为8（1000），CPL &#x3D; 0。</p><p>有些指令在CPL &#x3D; 3时不能使用，但是在CPL &#x3D; 0时可以使用。</p><p>那么，段权限检查需要满足什么条件才能算成功呢？</p><p>**CPL &lt;&#x3D; DPL 并且 RPL &lt;&#x3D; DPL (数值上的比较)**。注意两个条件必须要同时满足。</p><p><strong>特别说明</strong>：数据段的权限检查与代码段的权限检查不一样。上面的只适用于数据段的权限检查，代码段的权限是如何检查的，在以后的课程中会讲到。</p>]]></content>
+    <content type="html"><![CDATA[<p>上节课讲了段描述符里面的一些位，先来复习一下：对于一个段描述符，先看它的P位是否有效，然后看它的S位和TYPE域来区分该段的类型。这节课继续来学习段描述符的其他位。</p><span id="more"></span><p>老规矩，还是先上段描述符的结构图，方面查看和记忆：</p><p><img src="/2023/02/20/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A4%E3%80%81%E6%AE%B5%E6%9D%83%E9%99%90%E6%A3%80%E6%9F%A5/1.PNG"></p><h1 id="D-x2F-B位"><a href="#D-x2F-B位" class="headerlink" title="D&#x2F;B位"></a>D&#x2F;B位</h1><p>D&#x2F;B位比较复杂，加载到不同的段寄存器中的影响是不一样的。</p><p><strong>1、段描述符加载到数据段如：DS、ES</strong></p><p>其含义代表的是段上限的大小。（这也就是昨天提到的向上向下拓展时候影响段上限的位）</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">D = 1，段上限为4GB</span><br><span class="line">D = 0，段上限为64KB</span><br></pre></td></tr></table></figure><p><img src="/2023/02/20/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A4%E3%80%81%E6%AE%B5%E6%9D%83%E9%99%90%E6%A3%80%E6%9F%A5/2.PNG"></p><p><strong>2、段描述符加载到代码段如CS</strong></p><p>影响的是默认的选址方式。</p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">D = 1，默认采用32位寻址方式</span><br><span class="line">D = 0，默认采用16位寻址方式</span><br></pre></td></tr></table></figure><p>指令前缀67 改变寻址方式。</p><p><strong>3、段描述符加载到数据段如SS</strong></p><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">D = 1，隐式堆栈访问指令（如：PUSH POP CALL） 使用32位堆栈指针寄存器ESP</span><br><span class="line">D = 0，隐式堆栈访问指令（如：PUSH POP CALL） 使用16位堆栈指针寄存器SP</span><br></pre></td></tr></table></figure><p>跟上面加载到CS道理其实差不多。</p><h1 id="段权限检查"><a href="#段权限检查" class="headerlink" title="段权限检查"></a>段权限检查</h1><p>先来回顾一下几个概念：</p><p><strong>RPL</strong>：请求特权级，存在于16位的段选择子中。</p><p><strong>DPL</strong>：描述了访问该段至少需要什么级别，存在于段描述符中。</p><p>那么如何查看程序处于几环？也就是说，如何查看CPU当前处于哪个级别呢？这里有一个新的概念：</p><p><strong>CPL</strong>：当前特权级，存在于CS和SS中存储的段选择子最后2位。</p><p>这个CPL的意义是，当前CPU执行到某一位置时CPU的级别。如下图：</p><p><img src="/2023/02/20/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A4%E3%80%81%E6%AE%B5%E6%9D%83%E9%99%90%E6%A3%80%E6%9F%A5/3.PNG"></p><p>当CPU执行到80527da8这个地址时，CS值为8（1000），CPL &#x3D; 0。</p><p>有些指令在CPL &#x3D; 3时不能使用，但是在CPL &#x3D; 0时可以使用。</p><p>那么，段权限检查需要满足什么条件才能算成功呢？</p><p>**CPL &lt;&#x3D; DPL 并且 RPL &lt;&#x3D; DPL (数值上的比较)**。注意两个条件必须要同时满足。</p><p><strong>特别说明</strong>：数据段的权限检查与代码段的权限检查不一样。上面的只适用于数据段的权限检查，代码段的权限是如何检查的，在以后的课程中会讲到。</p>]]></content>
     
     
-    <summary type="html">&lt;p&gt;测试&lt;/p&gt;
-&lt;p&gt;上节课讲了段描述符里面的一些位，先来复习一下：对于一个段描述符，先看它的P位是否有效，然后看它的S位和TYPE域来区分该段的类型。这节课继续来学习段描述符的其他位。&lt;/p&gt;</summary>
+    <summary type="html">&lt;p&gt;上节课讲了段描述符里面的一些位，先来复习一下：对于一个段描述符，先看它的P位是否有效，然后看它的S位和TYPE域来区分该段的类型。这节课继续来学习段描述符的其他位。&lt;/p&gt;</summary>
     
     
     
