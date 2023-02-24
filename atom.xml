@@ -6,7 +6,7 @@
   <link href="http://example.com/atom.xml" rel="self"/>
   
   <link href="http://example.com/"/>
-  <updated>2023-02-23T11:19:27.244Z</updated>
+  <updated>2023-02-24T11:30:55.314Z</updated>
   <id>http://example.com/</id>
   
   <author>
@@ -17,16 +17,38 @@
   <generator uri="https://hexo.io/">Hexo</generator>
   
   <entry>
-    <title>保护模式：6、代码间的调用-跨段调用</title>
-    <link href="http://example.com/2023/02/23/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A6%E3%80%81%E4%BB%A3%E7%A0%81%E9%97%B4%E7%9A%84%E8%B0%83%E7%94%A8-%E8%B7%A8%E6%AE%B5%E8%B0%83%E7%94%A8/"/>
-    <id>http://example.com/2023/02/23/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A6%E3%80%81%E4%BB%A3%E7%A0%81%E9%97%B4%E7%9A%84%E8%B0%83%E7%94%A8-%E8%B7%A8%E6%AE%B5%E8%B0%83%E7%94%A8/</id>
-    <published>2023-02-23T11:18:26.000Z</published>
-    <updated>2023-02-23T11:19:27.244Z</updated>
+    <title>保护模式：7、调用门</title>
+    <link href="http://example.com/2023/02/24/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A7%E3%80%81%E8%B0%83%E7%94%A8%E9%97%A8/"/>
+    <id>http://example.com/2023/02/24/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A7%E3%80%81%E8%B0%83%E7%94%A8%E9%97%A8/</id>
+    <published>2023-02-24T11:30:19.000Z</published>
+    <updated>2023-02-24T11:30:55.314Z</updated>
     
     <content type="html"><![CDATA[<p>测试</p><span id="more"></span>]]></content>
     
     
     <summary type="html">&lt;p&gt;测试&lt;/p&gt;</summary>
+    
+    
+    
+    <category term="保护模式" scheme="http://example.com/categories/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F/"/>
+    
+    
+    <category term="保护模式" scheme="http://example.com/tags/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>保护模式：6、代码间的调用-跨段调用</title>
+    <link href="http://example.com/2023/02/23/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A6%E3%80%81%E4%BB%A3%E7%A0%81%E9%97%B4%E7%9A%84%E8%B0%83%E7%94%A8-%E8%B7%A8%E6%AE%B5%E8%B0%83%E7%94%A8/"/>
+    <id>http://example.com/2023/02/23/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A6%E3%80%81%E4%BB%A3%E7%A0%81%E9%97%B4%E7%9A%84%E8%B0%83%E7%94%A8-%E8%B7%A8%E6%AE%B5%E8%B0%83%E7%94%A8/</id>
+    <published>2023-02-23T11:18:26.000Z</published>
+    <updated>2023-02-24T10:57:16.530Z</updated>
+    
+    <content type="html"><![CDATA[<p>测试</p><p>上节课我们讲解了代码段间跳转JMP FAR指令及其执行流程，该指令可以同时改变CS和EIP。此外，CALL指令也有类似的作用。该指令与JMP类指令的区别在于，CALL FAR指令不仅可以同时改变CS和EIP，同时还会影响堆栈。除此以外，JMP类指令无法从低权限的非一致代码段跳转到高权限的非一致代码段，来提升CPL当前特权级，而CALL FAR指令却可以，就是通过调用门。</p><span id="more"></span><h1 id="短调用"><a href="#短调用" class="headerlink" title="短调用"></a>短调用</h1><p>指令格式：CALL 立即数&#x2F;寄存器&#x2F;内存。</p><p><img src="/2023/02/23/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A6%E3%80%81%E4%BB%A3%E7%A0%81%E9%97%B4%E7%9A%84%E8%B0%83%E7%94%A8-%E8%B7%A8%E6%AE%B5%E8%B0%83%E7%94%A8/1.PNG"></p><p>这就是普通的函数调用，并没有发生特权级别的变化（即CPL没有发生改变），上图所示的是同一个堆栈。</p><p>发生改变的寄存器为：ESP EIP。</p><h1 id="长调用（跨段不提权）"><a href="#长调用（跨段不提权）" class="headerlink" title="长调用（跨段不提权）"></a>长调用（跨段不提权）</h1><p>指令格式：CALL CS:EIP（EIP是废弃的）</p><p>在这里，CALL FAR后面跟了6个字节，其中高2字节是CS段选择子，低4字节随便写（因为是废弃的）。这里就来问题了，为什么是废弃的？既然是废弃的，那么执行这条指令后会跳到哪里去呢？其实跳到的地方是由CS段选择子指向的<strong>调用门</strong>决定的，具体怎么决定，下节课讲调用门的时候再说。</p><p><img src="/2023/02/23/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A6%E3%80%81%E4%BB%A3%E7%A0%81%E9%97%B4%E7%9A%84%E8%B0%83%E7%94%A8-%E8%B7%A8%E6%AE%B5%E8%B0%83%E7%94%A8/2.PNG"></p><p>发生改变的寄存器为：ESP EIP CS。</p><h1 id="长调用（跨段并提权）"><a href="#长调用（跨段并提权）" class="headerlink" title="长调用（跨段并提权）"></a>长调用（跨段并提权）</h1><p>指令格式：CALL CS:EIP（EIP是废弃的）</p><p>虽然指令的格式与上面不提权的情况相同，但是不同的是对应的段描述符的DPL。在不提权的情况下，对应的段描述符DPL&#x3D;3，而在提权的情况下，对应的段描述符（调用门）DPL&#x3D;0。</p><p>我们都知道，在一个程序中，代码的执行必须要用到堆栈，代码与堆栈是不分家的。因此CS和SS的权限必须一致，一个级别一套堆栈，当跳级的时候堆栈也换了一套对应级别的堆栈。</p><p>那么这就带来一个问题，长调用的时候既然切换了堆栈，那么当返回的时候怎么才能找到原来的堆栈呢？为了解决这个问题，程序在调用的时候不仅会将CS和返回地址压入堆栈中，还会将原来3环堆栈的SS和ESP也压入堆栈中（这里的堆栈是0环的堆栈）。如下图：</p><p><img src="/2023/02/23/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A6%E3%80%81%E4%BB%A3%E7%A0%81%E9%97%B4%E7%9A%84%E8%B0%83%E7%94%A8-%E8%B7%A8%E6%AE%B5%E8%B0%83%E7%94%A8/3.PNG"></p><p><img src="/2023/02/23/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A6%E3%80%81%E4%BB%A3%E7%A0%81%E9%97%B4%E7%9A%84%E8%B0%83%E7%94%A8-%E8%B7%A8%E6%AE%B5%E8%B0%83%E7%94%A8/4.PNG"></p><p>那么现在又会有一个问题：当通过CALL FAR使用调用门发生权限切换的时候，代码段和堆栈都会发生切换，切换后的代码执行位置由调用门所指定，可是0环的堆栈（SS和ESP）去哪里找呢？这两个寄存器在指令中没有体现，而是要去找TSS段。只要提权了，就去找TSS要SS和ESP。具体TSS是啥先不用管。</p>]]></content>
+    
+    
+    <summary type="html">&lt;p&gt;测试&lt;/p&gt;
+&lt;p&gt;上节课我们讲解了代码段间跳转JMP FAR指令及其执行流程，该指令可以同时改变CS和EIP。此外，CALL指令也有类似的作用。该指令与JMP类指令的区别在于，CALL FAR指令不仅可以同时改变CS和EIP，同时还会影响堆栈。除此以外，JMP类指令无法从低权限的非一致代码段跳转到高权限的非一致代码段，来提升CPL当前特权级，而CALL FAR指令却可以，就是通过调用门。&lt;/p&gt;</summary>
     
     
     
@@ -405,29 +427,6 @@
     
     
     <summary type="html">&lt;p&gt;本章探究switch语句的反汇编表现形式及特点。&lt;/p&gt;</summary>
-    
-    
-    
-    <category term="逆向分析" scheme="http://example.com/categories/%E9%80%86%E5%90%91%E5%88%86%E6%9E%90/"/>
-    
-    
-    <category term="逆向分析" scheme="http://example.com/tags/%E9%80%86%E5%90%91%E5%88%86%E6%9E%90/"/>
-    
-    <category term="C" scheme="http://example.com/tags/C/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>结构体字节对齐</title>
-    <link href="http://example.com/2022/04/18/%E7%BB%93%E6%9E%84%E4%BD%93%E5%AD%97%E8%8A%82%E5%AF%B9%E9%BD%90/"/>
-    <id>http://example.com/2022/04/18/%E7%BB%93%E6%9E%84%E4%BD%93%E5%AD%97%E8%8A%82%E5%AF%B9%E9%BD%90/</id>
-    <published>2022-04-18T08:29:21.000Z</published>
-    <updated>2022-04-19T05:25:54.502Z</updated>
-    
-    <content type="html"><![CDATA[<p>本节来分析C语言中结构体的字节对齐</p><span id="more"></span><p><strong>1、先来测试几个结构体的大小</strong></p><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">Test1</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">    <span class="type">char</span>  a;</span><br><span class="line">    <span class="type">int</span> b;</span><br><span class="line">&#125;;</span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">Test2</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">    <span class="type">int</span> a;</span><br><span class="line">    __int64 b;</span><br><span class="line">    <span class="type">char</span> c;</span><br><span class="line">&#125;;</span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">Test3</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">    <span class="type">int</span> a ;</span><br><span class="line">    __int64 b ;</span><br><span class="line">    <span class="type">char</span> c ;</span><br><span class="line">    <span class="type">char</span> d ;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure><p>运行得到</p><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">sizeof</span>(Test1) = <span class="number">8</span>;</span><br><span class="line"><span class="keyword">sizeof</span>(Test2) = <span class="number">24</span>;</span><br><span class="line"><span class="keyword">sizeof</span>(Test3) = <span class="number">24</span>;</span><br></pre></td></tr></table></figure><p><strong>2、探究结构体的内存分布</strong></p><p>#pragma pack的基本用法为：</p><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">pragma</span> pack(n)</span></span><br><span class="line"><span class="comment">//结构体。。。</span></span><br><span class="line"><span class="meta">#<span class="keyword">pragma</span> pack()</span></span><br><span class="line"><span class="comment">//对齐参数：n为字节对齐数，其取值为1、2、4、8，默认是8。</span></span><br></pre></td></tr></table></figure><p>如果这个n值比结构体成员的sizeof值小，那么该成员的偏移量应该以此值为准。</p><p>也就是说，结构体成员的偏移量应该取二者的最小值。</p><p>以前面的Test2结构体为例</p><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">Test2</span></span></span><br><span class="line"><span class="class">&#123;</span></span><br><span class="line">    <span class="type">int</span> a;</span><br><span class="line">    __int64 b;</span><br><span class="line">    <span class="type">char</span> c;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure><p>不同的对齐方式对应的内存分布图如下：</p><p><img src="/2022/04/18/%E7%BB%93%E6%9E%84%E4%BD%93%E5%AD%97%E8%8A%82%E5%AF%B9%E9%BD%90/1.PNG"><img src="/2022/04/18/%E7%BB%93%E6%9E%84%E4%BD%93%E5%AD%97%E8%8A%82%E5%AF%B9%E9%BD%90/2.PNG"><img src="/2022/04/18/%E7%BB%93%E6%9E%84%E4%BD%93%E5%AD%97%E8%8A%82%E5%AF%B9%E9%BD%90/3.PNG"></p><p>由于默认是最后的8字节对齐，因此sizeof(Test2) &#x3D; 24。</p><p><em>在这里给一个建议，按照数据类型由小到大的顺序进行书写。</em></p>]]></content>
-    
-    
-    <summary type="html">&lt;p&gt;本节来分析C语言中结构体的字节对齐&lt;/p&gt;</summary>
     
     
     
