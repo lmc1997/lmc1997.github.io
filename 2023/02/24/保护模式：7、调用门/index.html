@@ -20,18 +20,26 @@
     var CONFIG = {"hostname":"example.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":null},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.json"};
   </script>
 
-  <meta name="description" content="测试">
+  <meta name="description" content="上一节课讲解了CALL及CALL FAR指令的格式和堆栈的变化，知道了想要提权可以通过调用门的方式来实现。这节课我们就来具体讲解调用门的结构以及执行流程，并分析在无参和有参的情况下堆栈的区别。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="保护模式：7、调用门">
 <meta property="og:url" content="http://example.com/2023/02/24/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A7%E3%80%81%E8%B0%83%E7%94%A8%E9%97%A8/index.html">
 <meta property="og:site_name" content="刘小白的博客">
-<meta property="og:description" content="测试">
+<meta property="og:description" content="上一节课讲解了CALL及CALL FAR指令的格式和堆栈的变化，知道了想要提权可以通过调用门的方式来实现。这节课我们就来具体讲解调用门的结构以及执行流程，并分析在无参和有参的情况下堆栈的区别。">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/2023/02/24/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A7%E3%80%81%E8%B0%83%E7%94%A8%E9%97%A8/1.PNG">
+<meta property="og:image" content="http://example.com/2023/02/24/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A7%E3%80%81%E8%B0%83%E7%94%A8%E9%97%A8/2.PNG">
+<meta property="og:image" content="http://example.com/2023/02/24/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A7%E3%80%81%E8%B0%83%E7%94%A8%E9%97%A8/3.PNG">
+<meta property="og:image" content="http://example.com/2023/02/24/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A7%E3%80%81%E8%B0%83%E7%94%A8%E9%97%A8/4.PNG">
+<meta property="og:image" content="http://example.com/2023/02/24/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A7%E3%80%81%E8%B0%83%E7%94%A8%E9%97%A8/5.PNG">
+<meta property="og:image" content="http://example.com/2023/02/24/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A7%E3%80%81%E8%B0%83%E7%94%A8%E9%97%A8/6.PNG">
+<meta property="og:image" content="http://example.com/2023/02/24/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A7%E3%80%81%E8%B0%83%E7%94%A8%E9%97%A8/7.PNG">
 <meta property="article:published_time" content="2023-02-24T11:30:19.000Z">
-<meta property="article:modified_time" content="2023-02-24T11:30:55.314Z">
+<meta property="article:modified_time" content="2023-03-02T13:09:51.293Z">
 <meta property="article:author" content="刘小白">
 <meta property="article:tag" content="保护模式">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/2023/02/24/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A7%E3%80%81%E8%B0%83%E7%94%A8%E9%97%A8/1.PNG">
 
 <link rel="canonical" href="http://example.com/2023/02/24/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A7%E3%80%81%E8%B0%83%E7%94%A8%E9%97%A8/">
 
@@ -216,10 +224,16 @@
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
-              
 
-              <time title="创建时间：2023-02-24 19:30:19 / 修改时间：19:30:55" itemprop="dateCreated datePublished" datetime="2023-02-24T19:30:19+08:00">2023-02-24</time>
+              <time title="创建时间：2023-02-24 19:30:19" itemprop="dateCreated datePublished" datetime="2023-02-24T19:30:19+08:00">2023-02-24</time>
             </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-03-02 21:09:51" itemprop="dateModified" datetime="2023-03-02T21:09:51+08:00">2023-03-02</time>
+              </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
                 <i class="far fa-folder"></i>
@@ -241,8 +255,37 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p>测试</p>
+        <p>上一节课讲解了CALL及CALL FAR指令的格式和堆栈的变化，知道了想要提权可以通过调用门的方式来实现。这节课我们就来具体讲解调用门的结构以及执行流程，并分析在无参和有参的情况下堆栈的区别。</p>
 <span id="more"></span>
+
+<h1 id="无参调用门提权"><a href="#无参调用门提权" class="headerlink" title="无参调用门提权"></a>无参调用门提权</h1><h2 id="执行流程"><a href="#执行流程" class="headerlink" title="执行流程"></a>执行流程</h2><p>指令格式为：CALL CS:EIP（EIP废弃）</p>
+<ol>
+<li>根据CS的值查GDT表，找到对应的段描述符，这个描述符是一个调用门。</li>
+<li>在调用门描述符中存储着另一个代码段的段选择子，位于低4字节的16-31位。（注意必须是代码段）</li>
+<li>选择子指向的段.Base + 偏移地址，就是真正要执行的地址，偏移地址存储在调用门描述符低4字节0-15位和高4字节16-31位。</li>
+</ol>
+<h2 id="调用门描述符结构"><a href="#调用门描述符结构" class="headerlink" title="调用门描述符结构"></a>调用门描述符结构</h2><p><img src="/2023/02/24/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A7%E3%80%81%E8%B0%83%E7%94%A8%E9%97%A8/1.PNG"></p>
+<p>注意这里段描述符的DPL，由于我们是用调用门来提权，是从3环访问调用门，然后通过调用门去到指定的代码段，因此调用门的DPL必须是3。如果是0的话，3环的代码无法访问调用门，连敲门的权限都没有了。</p>
+<p>而调用门中的选择子指向的代码段的DPL可以为0，这样就实现了通过调用门来提权。</p>
+<h2 id="实验"><a href="#实验" class="headerlink" title="实验"></a>实验</h2><p>下面我们通过代码做实验，实现无参调用门提权读取高2G内存，并观察堆栈与寄存器的变化。</p>
+<p><img src="/2023/02/24/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A7%E3%80%81%E8%B0%83%E7%94%A8%E9%97%A8/2.PNG"></p>
+<p>首先观察GDT表，在虚拟地址0x8003f048的位置是空白，这里系统没有用到，我们可以在这里构造调用门，调用门的选择子为0100 1000（0x48）。在调用门中，我们打算指向上图中标注出来的位于8003f008处的段描述符，index&#x3D;1，选择子应为0000 1000（0x08），这是一个DPL为0的代码段（注意这个描述符下方是一个DPL为3的代码段，这两个段很常用）。至于偏移，我们还不清楚，先写成0。</p>
+<p>因此，构造完的调用门为：0000EC00 00080000。实验代码如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;stdio.h&gt;</span><br><span class="line">#include &lt;windows.h&gt;</span><br><span class="line">DWORD dwH2GValue;</span><br><span class="line">void _declspec(naked) MyFunc()</span><br><span class="line">&#123;</span><br><span class="line">	_asm</span><br><span class="line">	&#123;</span><br><span class="line">		int 3</span><br><span class="line">		/*</span><br><span class="line">		pushad</span><br><span class="line">		pushfd</span><br><span class="line">			mov eax,0x8003f00c	//读取高2G内存</span><br><span class="line">			mov ebx,[eax]</span><br><span class="line">			mov dwH2GValue,ebx</span><br><span class="line">		popfd</span><br><span class="line">		popad</span><br><span class="line">		*/	</span><br><span class="line">		retf	//注意返回，不能是ret</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line">int main(void)</span><br><span class="line">&#123;</span><br><span class="line">	char buff[6] = &#123;0x78, 0x56, 0x34, 0x12, 0x48, 0x00&#125;;</span><br><span class="line">	_asm</span><br><span class="line">	&#123;</span><br><span class="line">		call fword ptr[buff]</span><br><span class="line">	&#125;</span><br><span class="line">	printf(&quot;%08x&quot;, dwH2GValue);</span><br><span class="line">	getchar();</span><br><span class="line">	return 0;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>先来看一下上面的代码，在main函数中通过CALL FAR指令进入调用门，调用门处的选择子为0x48。然后通过调用门进入我们提权后要执行的函数MyFunc处，这个函数MyFunc是一个裸函数，格式固定必须这么写。提权后即可访问0x8003f00c（高2G）处的内存。</p>
+<p>因此，我们需要获取MyFunc的函数偏移，来写入构造的调用门中的偏移部分，如下图：</p>
+<p><img src="/2023/02/24/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A7%E3%80%81%E8%B0%83%E7%94%A8%E9%97%A8/3.PNG"></p>
+<p>可以看到我们目标函数的偏移为0x00401030，结合前面构造的调用门，最终构造的结果为0040ec00&#96;00081030，并将这个调用门写入对应位置，如下图：</p>
+<p><img src="/2023/02/24/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A7%E3%80%81%E8%B0%83%E7%94%A8%E9%97%A8/4.PNG"></p>
+<p>此处我们先来看一下进入调用门提权之前，一些寄存器的值：</p>
+<p><img src="/2023/02/24/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A7%E3%80%81%E8%B0%83%E7%94%A8%E9%97%A8/5.PNG"></p>
+<p>可以看到，提权之前CS&#x3D;001B，SS&#x3D;0023，说明CPL&#x3D;3，ESP&#x3D;0012FF28，说明此时堆栈位于3环。此时我们进入调用门，转到我们要执行的MyFunc函数，执行到指令int 3后，会中断到0环的调试器中：</p>
+<p><img src="/2023/02/24/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A7%E3%80%81%E8%B0%83%E7%94%A8%E9%97%A8/6.PNG"></p>
+<p>可以看到，中断的指令为00401030处的int 3指令，就是我们前面要跳转到的MyFunc函数的位置。同时，CS&#x3D;0008，SS&#x3D;0010，说明CPL&#x3D;0，ESP&#x3D;b1c61dd0，说明此时堆栈位于0环。然后我们观察堆栈，可以看到，从低到高依次是：返回地址、原CS、原ESP、原SS，符合上节课讲的堆栈图。继续执行代码，得到结果：</p>
+<p><img src="/2023/02/24/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A7%E3%80%81%E8%B0%83%E7%94%A8%E9%97%A8/7.PNG"></p>
+<p>代码在通过调用门提权后，成功读取到高2G的内存。</p>
+<h1 id="有参调用门提权"><a href="#有参调用门提权" class="headerlink" title="有参调用门提权"></a>有参调用门提权</h1>
     </div>
 
     
@@ -371,6 +414,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%97%A0%E5%8F%82%E8%B0%83%E7%94%A8%E9%97%A8%E6%8F%90%E6%9D%83"><span class="nav-number">1.</span> <span class="nav-text">无参调用门提权</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%89%A7%E8%A1%8C%E6%B5%81%E7%A8%8B"><span class="nav-number">1.1.</span> <span class="nav-text">执行流程</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%B0%83%E7%94%A8%E9%97%A8%E6%8F%8F%E8%BF%B0%E7%AC%A6%E7%BB%93%E6%9E%84"><span class="nav-number">1.2.</span> <span class="nav-text">调用门描述符结构</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C"><span class="nav-number">1.3.</span> <span class="nav-text">实验</span></a></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%9C%89%E5%8F%82%E8%B0%83%E7%94%A8%E9%97%A8%E6%8F%90%E6%9D%83"><span class="nav-number">2.</span> <span class="nav-text">有参调用门提权</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
