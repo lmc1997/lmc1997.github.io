@@ -20,18 +20,29 @@
     var CONFIG = {"hostname":"example.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":null},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.json"};
   </script>
 
-  <meta name="description" content="测试">
+  <meta name="description" content="上节课学习了任务段，知道了我们使用CALL FAR和JMP FAR指令通过任务段描述符跳转到TSS段来替换全部寄存器。这节课我们来学习如何通过任务门来访问任务段。那么这就首先带来了一个问题，明明我们都已经可以通过CALL FAR和JMP FAR指令访问任务段了，为什么还需要任务门呢？">
 <meta property="og:type" content="article">
 <meta property="og:title" content="保护模式：11、任务门">
 <meta property="og:url" content="http://example.com/2023/03/15/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A11%E3%80%81%E4%BB%BB%E5%8A%A1%E9%97%A8/index.html">
 <meta property="og:site_name" content="刘小白的博客">
-<meta property="og:description" content="测试">
+<meta property="og:description" content="上节课学习了任务段，知道了我们使用CALL FAR和JMP FAR指令通过任务段描述符跳转到TSS段来替换全部寄存器。这节课我们来学习如何通过任务门来访问任务段。那么这就首先带来了一个问题，明明我们都已经可以通过CALL FAR和JMP FAR指令访问任务段了，为什么还需要任务门呢？">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/2023/03/15/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A11%E3%80%81%E4%BB%BB%E5%8A%A1%E9%97%A8/1.PNG">
+<meta property="og:image" content="http://example.com/2023/03/15/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A11%E3%80%81%E4%BB%BB%E5%8A%A1%E9%97%A8/2.PNG">
+<meta property="og:image" content="http://example.com/2023/03/15/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A11%E3%80%81%E4%BB%BB%E5%8A%A1%E9%97%A8/3.PNG">
+<meta property="og:image" content="http://example.com/2023/03/15/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A11%E3%80%81%E4%BB%BB%E5%8A%A1%E9%97%A8/4.PNG">
+<meta property="og:image" content="http://example.com/2023/03/15/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A11%E3%80%81%E4%BB%BB%E5%8A%A1%E9%97%A8/5.PNG">
+<meta property="og:image" content="http://example.com/2023/03/15/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A11%E3%80%81%E4%BB%BB%E5%8A%A1%E9%97%A8/6.PNG">
+<meta property="og:image" content="http://example.com/2023/03/15/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A11%E3%80%81%E4%BB%BB%E5%8A%A1%E9%97%A8/7.PNG">
+<meta property="og:image" content="http://example.com/2023/03/15/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A11%E3%80%81%E4%BB%BB%E5%8A%A1%E9%97%A8/8.PNG">
+<meta property="og:image" content="http://example.com/2023/03/15/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A11%E3%80%81%E4%BB%BB%E5%8A%A1%E9%97%A8/9.PNG">
+<meta property="og:image" content="http://example.com/2023/03/15/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A11%E3%80%81%E4%BB%BB%E5%8A%A1%E9%97%A8/10.PNG">
 <meta property="article:published_time" content="2023-03-15T10:51:49.000Z">
-<meta property="article:modified_time" content="2023-03-15T10:52:36.887Z">
+<meta property="article:modified_time" content="2023-03-18T08:35:22.338Z">
 <meta property="article:author" content="刘小白">
 <meta property="article:tag" content="保护模式">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/2023/03/15/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A11%E3%80%81%E4%BB%BB%E5%8A%A1%E9%97%A8/1.PNG">
 
 <link rel="canonical" href="http://example.com/2023/03/15/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A11%E3%80%81%E4%BB%BB%E5%8A%A1%E9%97%A8/">
 
@@ -138,7 +149,7 @@
   </li>
         <li class="menu-item menu-item-archives">
 
-    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">28</span></a>
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">29</span></a>
 
   </li>
       <li class="menu-item menu-item-search">
@@ -216,10 +227,16 @@
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
-              
 
-              <time title="创建时间：2023-03-15 18:51:49 / 修改时间：18:52:36" itemprop="dateCreated datePublished" datetime="2023-03-15T18:51:49+08:00">2023-03-15</time>
+              <time title="创建时间：2023-03-15 18:51:49" itemprop="dateCreated datePublished" datetime="2023-03-15T18:51:49+08:00">2023-03-15</time>
             </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-03-18 16:35:22" itemprop="dateModified" datetime="2023-03-18T16:35:22+08:00">2023-03-18</time>
+              </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
                 <i class="far fa-folder"></i>
@@ -241,8 +258,72 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p>测试</p>
+        <p>上节课学习了任务段，知道了我们使用CALL FAR和JMP FAR指令通过任务段描述符跳转到TSS段来替换全部寄存器。这节课我们来学习如何通过任务门来访问任务段。那么这就首先带来了一个问题，明明我们都已经可以通过CALL FAR和JMP FAR指令访问任务段了，为什么还需要任务门呢？</p>
 <span id="more"></span>
+
+<h1 id="任务门"><a href="#任务门" class="headerlink" title="任务门"></a>任务门</h1><p>先来回顾一下，在IDT表中，有三种门描述符，分别是：中断门、陷阱门和任务门。任务门描述符结构如下：</p>
+<p><img src="/2023/03/15/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A11%E3%80%81%E4%BB%BB%E5%8A%A1%E9%97%A8/1.PNG"></p>
+<p>结合上图，我们构造的任务门形式应该为：0000e500&#96;XXXX0000，X部分为TSS段选择子。</p>
+<p>注意任务门描述符中的TSS段选择子的部分，填充的是位于GDT表中的TSS段描述符的选择子（上一节课是通过CALL 与JMP指令来找到TSS段描述符，这是通过任务门中的TSS段选择子来寻找），跨表了。</p>
+<p>任务门执行流程：</p>
+<ol>
+<li>INT N</li>
+<li>查IDT表，找到任务门描述符</li>
+<li>根据任务门描述符中的选择子，查GDT表，找到TSS段描述符</li>
+<li>根据TSS段描述符覆盖TR段寄存器</li>
+<li>找到TSS段，覆盖寄存器，执行EIP所指向的位置。</li>
+<li>iretd返回</li>
+</ol>
+<h1 id="练习题"><a href="#练习题" class="headerlink" title="练习题"></a>练习题</h1><p><strong>题目：</strong></p>
+<ol>
+<li>实现任务门访问任务段进0环</li>
+<li>实现任务门访问任务段进1环</li>
+</ol>
+<p>答案：</p>
+<p>1、代码如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;windows.h&gt;</span><br><span class="line">#include &lt;stdio.h&gt;</span><br><span class="line">DWORD dwOk;</span><br><span class="line">DWORD dwESP;</span><br><span class="line">DWORD dwCS;</span><br><span class="line">int High2GValue;</span><br><span class="line">//0x401020</span><br><span class="line">void __declspec(naked) MyFunc()</span><br><span class="line">&#123;</span><br><span class="line">	dwOk = 1;</span><br><span class="line">	_asm</span><br><span class="line">	&#123;</span><br><span class="line">		mov eax, esp</span><br><span class="line">		mov dwESP, eax</span><br><span class="line">		mov ax, cs</span><br><span class="line">		mov word ptr ds : [dwCS], ax</span><br><span class="line">		mov eax, 0x8003f00c</span><br><span class="line">		mov eax, [eax]</span><br><span class="line">		mov High2GValue, eax</span><br><span class="line">		//回去的代码</span><br><span class="line">		iretd</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line">int main(int argc, char* argv[])</span><br><span class="line">&#123;</span><br><span class="line">	//构造TSS</span><br><span class="line">	char bu[0x10];</span><br><span class="line">	DWORD icr3;</span><br><span class="line">	DWORD TSS[0x68];</span><br><span class="line">	printf(&quot;TSS地址: %08X\n&quot;, TSS);</span><br><span class="line">	printf(&quot;设定的ESP堆栈为: %08X\n&quot;, bu);</span><br><span class="line">	printf(&quot;input cr3: \n&quot;);</span><br><span class="line">	scanf(&quot;%x&quot;, &amp;icr3);	//通过windbg工具 !process 0 0指令获取</span><br><span class="line">	TSS[0] = 0x00000000; // Previous Task Link CPU填充，表示上一个任务的选择子</span><br><span class="line">	TSS[1] = (DWORD)bu; // ESP0</span><br><span class="line">	TSS[2] = 0x00000010; // SS0</span><br><span class="line">	TSS[3] = 0x00000000; // ESP1</span><br><span class="line">	TSS[4] = 0x00000000; // SS1</span><br><span class="line">	TSS[5] = 0x00000000; // ESP2</span><br><span class="line">	TSS[6] = 0x00000000; // SS2</span><br><span class="line">	TSS[7] = (DWORD)icr3; // CR3 学到页就知道是啥了</span><br><span class="line">	TSS[8] = 0x00401020; // EIP</span><br><span class="line">	TSS[9] = 0x00000000; // EFLAGS</span><br><span class="line">	TSS[10] = 0x00000000; // EAX</span><br><span class="line">	TSS[11] = 0x00000000; // ECX</span><br><span class="line">	TSS[12] = 0x00000000; // EDX</span><br><span class="line">	TSS[13] = 0x00000000; // EBX</span><br><span class="line">	TSS[14] = (DWORD)bu;  // ESP</span><br><span class="line">	TSS[15] = 0x00000000; // EBP</span><br><span class="line">	TSS[16] = 0x00000000; // ESI</span><br><span class="line">	TSS[17] = 0x00000000; // EDI</span><br><span class="line">	TSS[18] = 0x00000023; // ES</span><br><span class="line">	TSS[19] = 0x00000008; // CS 0x0000001B</span><br><span class="line">	TSS[20] = 0x00000010; // SS 0x00000023</span><br><span class="line">	TSS[21] = 0x00000023; // DS</span><br><span class="line">	TSS[22] = 0x00000030; // FS 0x0000003B</span><br><span class="line">	TSS[23] = 0x00000000; // GS</span><br><span class="line">	TSS[24] = 0x00000000; // LDT Segment Selector</span><br><span class="line">	TSS[25] = 0x20ac0000; // I/O Map Base Address</span><br><span class="line">	//修改TR寄存器</span><br><span class="line">	__asm</span><br><span class="line">	&#123;</span><br><span class="line">		int 0x20</span><br><span class="line">	&#125;</span><br><span class="line">	printf(&quot;ok: %d    ESP: %x    CS: %x\n&quot;, dwOk, dwESP, dwCS);</span><br><span class="line">	printf(&quot;%x\n&quot;, High2GValue);</span><br><span class="line">	getchar();</span><br><span class="line">	return 0;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在IDT表中构造的任务门和在GDT表中构造的TSS任务段描述符分别如下：</p>
+<p><img src="/2023/03/15/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A11%E3%80%81%E4%BB%BB%E5%8A%A1%E9%97%A8/2.PNG"></p>
+<p><img src="/2023/03/15/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A11%E3%80%81%E4%BB%BB%E5%8A%A1%E9%97%A8/3.PNG"></p>
+<p>执行流程与前面CALL FAR到任务段一样。执行结果如下，并且成功提权进入0环。</p>
+<p><img src="/2023/03/15/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A11%E3%80%81%E4%BB%BB%E5%8A%A1%E9%97%A8/4.PNG"></p>
+<p>2、首先构造需要进到一环的所有段寄存器，并写入GDT表中如下位置：</p>
+<p><img src="/2023/03/15/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A11%E3%80%81%E4%BB%BB%E5%8A%A1%E9%97%A8/5.PNG"></p>
+<p>ES、DS不用改。</p>
+<p>SS用00cfb300 0000ffff写入8003f0b0处，对应的选择子为0x1011 0001（第22个，0xb1）。</p>
+<p>CS用00cfbb00 0000ffff写入8003f0b8处，对应的选择子为0x1011 1001（第23个，0xb9）。</p>
+<p>FS用ffc0b3df f0000001写入8003f0c0处，对应的选择子为0x1100 0001（第24个，0xc1）。</p>
+<p>修改的方法就是找到原来进入0环时的选择子，找到对应的描述符，将DPL改为1即可。</p>
+<p>代码如下：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br></pre></td><td class="code"><pre><span class="line">#include &lt;windows.h&gt;</span><br><span class="line">#include &lt;stdio.h&gt;</span><br><span class="line">DWORD dwOk;</span><br><span class="line">DWORD dwESP;</span><br><span class="line">DWORD dwCS;</span><br><span class="line">void __declspec(naked) MyFunc()</span><br><span class="line">&#123;</span><br><span class="line">	dwOk = 1;</span><br><span class="line">	_asm</span><br><span class="line">	&#123;</span><br><span class="line">		mov eax, esp</span><br><span class="line">		mov dwESP, eax</span><br><span class="line">		mov ax, cs</span><br><span class="line">		mov word ptr ds : [dwCS], ax</span><br><span class="line">		//回去的代码</span><br><span class="line">		iretd</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line">int main(int argc, char* argv[])</span><br><span class="line">&#123;</span><br><span class="line">	//构造TSS</span><br><span class="line">	char bu[0x10];</span><br><span class="line">	DWORD icr3;</span><br><span class="line">	DWORD TSS[0x68];</span><br><span class="line">	printf(&quot;TSS地址: %08X\n&quot;, TSS);</span><br><span class="line">	printf(&quot;设定的ESP堆栈为: %08X\n&quot;, bu);</span><br><span class="line">	printf(&quot;input cr3: \n&quot;);</span><br><span class="line">	scanf(&quot;%x&quot;, &amp;icr3);	//通过windbg工具 !process 0 0指令获取</span><br><span class="line">	TSS[0] = 0x00000000; // Previous Task Link CPU填充，表示上一个任务的选择子</span><br><span class="line">	TSS[1] = 0x00000000; // ESP0</span><br><span class="line">	TSS[2] = 0x00000000; // SS0</span><br><span class="line">	TSS[3] = (DWORD)bu; // ESP1</span><br><span class="line">	TSS[4] = 0x000000b1; // SS1</span><br><span class="line">	TSS[5] = 0x00000000; // ESP2</span><br><span class="line">	TSS[6] = 0x00000000; // SS2</span><br><span class="line">	TSS[7] = (DWORD)icr3; // CR3 学到页就知道是啥了</span><br><span class="line">	TSS[8] = (DWORD)MyFunc; // EIP</span><br><span class="line">	TSS[9] = 0x00000000; // EFLAGS</span><br><span class="line">	TSS[10] = 0x00000000; // EAX</span><br><span class="line">	TSS[11] = 0x00000000; // ECX</span><br><span class="line">	TSS[12] = 0x00000000; // EDX</span><br><span class="line">	TSS[13] = 0x00000000; // EBX</span><br><span class="line">	TSS[14] = (DWORD)bu; // ESP</span><br><span class="line">	TSS[15] = 0x00000000; // EBP</span><br><span class="line">	TSS[16] = 0x00000000; // ESI</span><br><span class="line">	TSS[17] = 0x00000000; // EDI</span><br><span class="line">	TSS[18] = 0x00000023; // ES</span><br><span class="line">	TSS[19] = 0x000000b9; // CS 0x0000001B</span><br><span class="line">	TSS[20] = 0x000000b1; // SS 0x00000023</span><br><span class="line">	TSS[21] = 0x00000023; // DS</span><br><span class="line">	TSS[22] = 0x000000c1; // FS 0x0000003B</span><br><span class="line">	TSS[23] = 0x00000000; // GS</span><br><span class="line">	TSS[24] = 0x00000000; // LDT Segment Selector</span><br><span class="line">	TSS[25] = 0x20ac0000; // I/O Map Base Address</span><br><span class="line">	//修改TR寄存器</span><br><span class="line">	__asm</span><br><span class="line">	&#123;</span><br><span class="line">		int 0x20</span><br><span class="line">	&#125;</span><br><span class="line">	printf(&quot;ok: %d    ESP: %x    CS: %x\n&quot;, dwOk, dwESP, dwCS);</span><br><span class="line">	getchar();</span><br><span class="line">	return 0;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><img src="/2023/03/15/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A11%E3%80%81%E4%BB%BB%E5%8A%A1%E9%97%A8/6.PNG"></p>
+<p>这里补充一下，TSS中ESP0、1、2的作用在于当使用任务门等手段进入任务段后再次发生由于权限变化导致堆栈切换时，提供对应权限的对应值，而只有ESP和SS才是当进入任务段后的堆栈。</p>
+<h1 id="思考题"><a href="#思考题" class="headerlink" title="思考题"></a>思考题</h1><p><strong>问题：</strong></p>
+<ol>
+<li>在开头已经提过了，为什么已经可以通过JMP FAR和CALL FAR访问任务段了，还需要任务门呢？</li>
+<li>在保护模式中，当CPU检测到异常的时候，会根据异常的类型来查找对应的异常处理函数。比如当指令检测到除0异常时，将默认执行0号中断。请列出处理除0异常的函数的地址。</li>
+<li>在保护模式中，当CPU检测到异常的时候，会根据异常的类型来查找对应的异常处理函数。比如当指令检测到除0异常时，将默认执行0号中断所指定的异常处理程序。但是，异常处理程序本身仍然可能出现异常，如果异常处理程序出现异常的时候（双重错误），CPU会默认执行8号中断，请分析：8号中断是什么？做了什么事情？替换了哪些寄存器？替换后的值是多少？为什么这样设计？</li>
+</ol>
+<p><strong>答案：</strong></p>
+<ol>
+<li><p>JMP FAR 和 CALL FAR 是主动访问任务段。设计任务门是发生错误后执行int指令被动去往对应的错误处理函数。</p>
+</li>
+<li><p>IDT表内容如下：</p>
+<p><img src="/2023/03/15/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A11%E3%80%81%E4%BB%BB%E5%8A%A1%E9%97%A8/7.PNG"></p>
+<p>0号中断为80538e00&#96;0008f19c。这是一个中断门，对应的代码段选择子为0x08，代码偏移为0x8053f19c，因此处理除0异常的函数地址为0x8053f19c。</p>
+</li>
+<li><p>8号中断为00008500&#96;00501198。这是一个任务门，里面的TSS段选择子为0x50。接着观察GDT表0x50（0101 0000，第10项）对应的段选择子，如下图：</p>
+<p><img src="/2023/03/15/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A11%E3%80%81%E4%BB%BB%E5%8A%A1%E9%97%A8/8.PNG"></p>
+<p>这是一个TSS段描述符，TSS段基址为8054af00。查看这个地址内容，如下：</p>
+<p><img src="/2023/03/15/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A11%E3%80%81%E4%BB%BB%E5%8A%A1%E9%97%A8/9.PNG"></p>
+<p>在这个TSS段中，替换的ESP0 &#x3D; 80547f00，SS0 &#x3D; 0x10，CR3 &#x3D; 00b4f000，EIP &#x3D; 805404ce，其他依次对应图中的值。且对应的程序如下：</p>
+<p><img src="/2023/03/15/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A11%E3%80%81%E4%BB%BB%E5%8A%A1%E9%97%A8/10.PNG"></p>
+<p>当程序出现双重错误后，将执行这里的程序，完成任务切换。</p>
+</li>
+</ol>
+
     </div>
 
     
@@ -312,7 +393,10 @@
     <a href="/2023/03/06/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A10%E3%80%81%E4%BB%BB%E5%8A%A1%E6%AE%B5/" rel="prev" title="保护模式：10、任务段">
       <i class="fa fa-chevron-left"></i> 保护模式：10、任务段
     </a></div>
-      <div class="post-nav-item"></div>
+      <div class="post-nav-item">
+    <a href="/2023/03/18/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A12%E3%80%8110-10-12%E5%88%86%E9%A1%B5/" rel="next" title="保护模式：12、10-10-12分页">
+      保护模式：12、10-10-12分页 <i class="fa fa-chevron-right"></i>
+    </a></div>
     </div>
       </footer>
     
@@ -371,6 +455,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%BB%BB%E5%8A%A1%E9%97%A8"><span class="nav-number">1.</span> <span class="nav-text">任务门</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%BB%83%E4%B9%A0%E9%A2%98"><span class="nav-number">2.</span> <span class="nav-text">练习题</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E6%80%9D%E8%80%83%E9%A2%98"><span class="nav-number">3.</span> <span class="nav-text">思考题</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -386,7 +471,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">28</span>
+          <span class="site-state-item-count">29</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
