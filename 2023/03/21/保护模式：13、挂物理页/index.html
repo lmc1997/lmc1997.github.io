@@ -20,18 +20,38 @@
     var CONFIG = {"hostname":"example.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":null},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.json"};
   </script>
 
-  <meta name="description" content="测试">
+  <meta name="description" content="上节课简单地了解了10-10-12分页机制，这节课继续深入学习。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="保护模式：13、挂物理页">
 <meta property="og:url" content="http://example.com/2023/03/21/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A13%E3%80%81%E6%8C%82%E7%89%A9%E7%90%86%E9%A1%B5/index.html">
 <meta property="og:site_name" content="刘小白的博客">
-<meta property="og:description" content="测试">
+<meta property="og:description" content="上节课简单地了解了10-10-12分页机制，这节课继续深入学习。">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/2023/03/21/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A13%E3%80%81%E6%8C%82%E7%89%A9%E7%90%86%E9%A1%B5/1.PNG">
+<meta property="og:image" content="http://example.com/2023/03/21/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A13%E3%80%81%E6%8C%82%E7%89%A9%E7%90%86%E9%A1%B5/2.PNG">
+<meta property="og:image" content="http://example.com/2023/03/21/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A13%E3%80%81%E6%8C%82%E7%89%A9%E7%90%86%E9%A1%B5/3.PNG">
+<meta property="og:image" content="http://example.com/2023/03/21/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A13%E3%80%81%E6%8C%82%E7%89%A9%E7%90%86%E9%A1%B5/4.PNG">
+<meta property="og:image" content="http://example.com/2023/03/21/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A13%E3%80%81%E6%8C%82%E7%89%A9%E7%90%86%E9%A1%B5/5.PNG">
+<meta property="og:image" content="http://example.com/2023/03/21/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A13%E3%80%81%E6%8C%82%E7%89%A9%E7%90%86%E9%A1%B5/6.PNG">
+<meta property="og:image" content="http://example.com/2023/03/21/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A13%E3%80%81%E6%8C%82%E7%89%A9%E7%90%86%E9%A1%B5/7.PNG">
+<meta property="og:image" content="http://example.com/2023/03/21/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A13%E3%80%81%E6%8C%82%E7%89%A9%E7%90%86%E9%A1%B5/8.PNG">
+<meta property="og:image" content="http://example.com/2023/03/21/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A13%E3%80%81%E6%8C%82%E7%89%A9%E7%90%86%E9%A1%B5/9.PNG">
+<meta property="og:image" content="http://example.com/2023/03/21/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A13%E3%80%81%E6%8C%82%E7%89%A9%E7%90%86%E9%A1%B5/10.PNG">
+<meta property="og:image" content="http://example.com/2023/03/21/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A13%E3%80%81%E6%8C%82%E7%89%A9%E7%90%86%E9%A1%B5/11.PNG">
+<meta property="og:image" content="http://example.com/2023/03/21/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A13%E3%80%81%E6%8C%82%E7%89%A9%E7%90%86%E9%A1%B5/12.PNG">
+<meta property="og:image" content="http://example.com/2023/03/21/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A13%E3%80%81%E6%8C%82%E7%89%A9%E7%90%86%E9%A1%B5/13.PNG">
+<meta property="og:image" content="http://example.com/2023/03/21/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A13%E3%80%81%E6%8C%82%E7%89%A9%E7%90%86%E9%A1%B5/14.PNG">
+<meta property="og:image" content="http://example.com/2023/03/21/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A13%E3%80%81%E6%8C%82%E7%89%A9%E7%90%86%E9%A1%B5/15.PNG">
+<meta property="og:image" content="http://example.com/2023/03/21/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A13%E3%80%81%E6%8C%82%E7%89%A9%E7%90%86%E9%A1%B5/16.PNG">
+<meta property="og:image" content="http://example.com/2023/03/21/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A13%E3%80%81%E6%8C%82%E7%89%A9%E7%90%86%E9%A1%B5/17.PNG">
+<meta property="og:image" content="http://example.com/2023/03/21/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A13%E3%80%81%E6%8C%82%E7%89%A9%E7%90%86%E9%A1%B5/18.PNG">
+<meta property="og:image" content="http://example.com/2023/03/21/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A13%E3%80%81%E6%8C%82%E7%89%A9%E7%90%86%E9%A1%B5/19.PNG">
 <meta property="article:published_time" content="2023-03-21T12:23:25.000Z">
-<meta property="article:modified_time" content="2023-03-21T12:24:04.620Z">
+<meta property="article:modified_time" content="2023-03-23T10:43:44.406Z">
 <meta property="article:author" content="刘小白">
 <meta property="article:tag" content="保护模式">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/2023/03/21/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A13%E3%80%81%E6%8C%82%E7%89%A9%E7%90%86%E9%A1%B5/1.PNG">
 
 <link rel="canonical" href="http://example.com/2023/03/21/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A13%E3%80%81%E6%8C%82%E7%89%A9%E7%90%86%E9%A1%B5/">
 
@@ -138,7 +158,7 @@
   </li>
         <li class="menu-item menu-item-archives">
 
-    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">30</span></a>
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">31</span></a>
 
   </li>
       <li class="menu-item menu-item-search">
@@ -216,10 +236,16 @@
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
-              
 
-              <time title="创建时间：2023-03-21 20:23:25 / 修改时间：20:24:04" itemprop="dateCreated datePublished" datetime="2023-03-21T20:23:25+08:00">2023-03-21</time>
+              <time title="创建时间：2023-03-21 20:23:25" itemprop="dateCreated datePublished" datetime="2023-03-21T20:23:25+08:00">2023-03-21</time>
             </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-03-23 18:43:44" itemprop="dateModified" datetime="2023-03-23T18:43:44+08:00">2023-03-23</time>
+              </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
                 <i class="far fa-folder"></i>
@@ -241,8 +267,71 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p>测试</p>
+        <p>上节课简单地了解了10-10-12分页机制，这节课继续深入学习。</p>
 <span id="more"></span>
+
+<h1 id="PDE与PTE"><a href="#PDE与PTE" class="headerlink" title="PDE与PTE"></a>PDE与PTE</h1><p>先来看一张直观的图：</p>
+<p><img src="/2023/03/21/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A13%E3%80%81%E6%8C%82%E7%89%A9%E7%90%86%E9%A1%B5/1.PNG"></p>
+<p>在上图中，第一级为一张表，叫做页目录表（Page Directory Table），基址由CR3指向，里面的每一项都是一个物理地址，宽度为4字节，指向下一级的页表，页目录表中的每一项叫做页目录项（Page Directory Entry）。第二级也为一张表，但是存在很多这样的表，叫做页表（Page Table），里面的每一项叫做页表项（Page Table Entry），也都是一个物理地址，宽度为4字节，指向最终的物理页。</p>
+<p>为什么要按照10-10-12来分呢？一张页目录表和一张页表大小都为4KB（4096字节），每一项为4字节，故页目录表和页表都有1024项，需要10位二进制来寻找；对于最后的页表大小为4096字节，需要12位二进制来寻址。</p>
+<p><strong>PTE（页表项）的特性</strong>：</p>
+<ol>
+<li>可以有PTE不指向物理页（为空）。</li>
+<li>不同的PTE可以指向相同的物理页。</li>
+<li>一个PTE不能同时指向两个物理页。</li>
+</ol>
+<p>现在来思考一个问题：如何判断两个线性地址在不在一个物理页上？（CR3一样）</p>
+<p>答：在同一个进程中，例如对于 0x12345666 和 0x123456888 这两个虚拟地址，通过前20位的索引发现都指向了同一个PDE、PTE和物理页。因此可以得到结论，如果同一个进程中两个线性地址的高5位十六进制都一样（也就是说位于虚拟地址的同一页，大小为1000h），那么一定在同一个物理页。此外，如果高5位不一样，那么它们对应的PDE和PTE一定不是同一个，但是如果它们的PTE值相等的话，也会在同一个物理页上。</p>
+<h1 id="实验"><a href="#实验" class="headerlink" title="实验"></a>实验</h1><p>接下来做一个实验，如下图：</p>
+<p><img src="/2023/03/21/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A13%E3%80%81%E6%8C%82%E7%89%A9%E7%90%86%E9%A1%B5/2.PNG"></p>
+<p>当我要在地址为0的地方写入数据时，提示写入失败。这是什么原因呢？</p>
+<p>来看一下0地址的PDT与PTT：</p>
+<p><img src="/2023/03/21/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A13%E3%80%81%E6%8C%82%E7%89%A9%E7%90%86%E9%A1%B5/3.PNG"></p>
+<p>发现该进程的CR3为21365000，然后查找一下0地址PDT与PTT：</p>
+<p><img src="/2023/03/21/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A13%E3%80%81%E6%8C%82%E7%89%A9%E7%90%86%E9%A1%B5/4.PNG"></p>
+<p>原来，0地址的PTE为0，即没有指向物理页，因此0地址当然不能写入数据。要想向0地址写入数据，必须要给它挂一个物理页，即给它一个有效的PTE。因此我们可以申请一个变量，得到它的地址，找到对应的PTE，并把这个PTE写入0地址的PTE：</p>
+<p><img src="/2023/03/21/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A13%E3%80%81%E6%8C%82%E7%89%A9%E7%90%86%E9%A1%B5/5.PNG"></p>
+<p><img src="/2023/03/21/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A13%E3%80%81%E6%8C%82%E7%89%A9%E7%90%86%E9%A1%B5/6.PNG"></p>
+<p>然后将变量a对应的PTE写入0地址对应的PTE上：</p>
+<p><img src="/2023/03/21/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A13%E3%80%81%E6%8C%82%E7%89%A9%E7%90%86%E9%A1%B5/7.PNG"></p>
+<p>然后再运行程序，发现0地址变成可读可写了：</p>
+<p><img src="/2023/03/21/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A13%E3%80%81%E6%8C%82%E7%89%A9%E7%90%86%E9%A1%B5/8.PNG"></p>
+<p>最后查看物理内存，发现该值也已经写入物理页上了：</p>
+<p><img src="/2023/03/21/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A13%E3%80%81%E6%8C%82%E7%89%A9%E7%90%86%E9%A1%B5/9.PNG"></p>
+<h1 id="练习"><a href="#练习" class="headerlink" title="练习"></a>练习</h1><p>问题：</p>
+<ol>
+<li>为变量X再映射一个线性地址，并通过这个新的地址读写X的值。</li>
+<li>10-10-12分页模式物理内存能够识别的最多范围是多少？</li>
+</ol>
+<p>答案：</p>
+<p>1、代码如下：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">(<span class="type">int</span> argc, <span class="type">char</span>* argv[])</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="type">int</span> a = <span class="number">0x66666666</span>;</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;变量a的地址为:%p\n&quot;</span>, &amp;a);</span><br><span class="line">	<span class="type">int</span>* new_addr = (<span class="type">int</span>*)(((<span class="type">int</span>)&amp;a)&amp;<span class="number">0xfff</span>);</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;新地址为:%p\n&quot;</span>, new_addr);</span><br><span class="line">	<span class="comment">//先给新地址挂物理页后执行此操作</span></span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;通过新地址改之前的值:%x\n&quot;</span>, *new_addr);</span><br><span class="line">	*new_addr = <span class="number">0x12345678</span>;</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;通过新地址改之后的值:%x\n&quot;</span>, a);</span><br><span class="line">	<span class="built_in">getchar</span>();</span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><img src="/2023/03/21/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A13%E3%80%81%E6%8C%82%E7%89%A9%E7%90%86%E9%A1%B5/10.PNG"></p>
+<p>这个新的地址0x000000F7C与0地址在同一页，因此对应的PDE和PTE是同一个，因此修改0地址的PTE：</p>
+<p><img src="/2023/03/21/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A13%E3%80%81%E6%8C%82%E7%89%A9%E7%90%86%E9%A1%B5/11.PNG"></p>
+<p>需要将0地址对应的PTE修改成变量a的PTE，a的PTE如下：</p>
+<p><img src="/2023/03/21/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A13%E3%80%81%E6%8C%82%E7%89%A9%E7%90%86%E9%A1%B5/12.PNG"></p>
+<p>然后将这个值填入0地址对应的PTE：</p>
+<p><img src="/2023/03/21/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A13%E3%80%81%E6%8C%82%E7%89%A9%E7%90%86%E9%A1%B5/13.PNG"></p>
+<p>继续运行程序，成功通过新地址读写a变量：</p>
+<p><img src="/2023/03/21/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A13%E3%80%81%E6%8C%82%E7%89%A9%E7%90%86%E9%A1%B5/14.PNG"></p>
+<p>2、物理页由PTE指向，PTE指向的物理页基址最大值为FFFFF000，故最大的物理地址为FFFFFFFF，也就是4G。</p>
+<h1 id="出于好奇的有趣实验"><a href="#出于好奇的有趣实验" class="headerlink" title="出于好奇的有趣实验"></a>出于好奇的有趣实验</h1><p>上课时，海哥讲说如果想要读取另一个进程的数据，可以将自己的CR3改成目标进程的，然后直接读取自己进程中数据的地址，读的就相当于对方进程的数据，但是我们现在还做不到修改CR3。同时我在想另一种方法，反正目标进程的数据已经写在它对应的物理页上了，那我把自己的相同的地址对应的PTE修改成目标进程目标数据的地址对应的PTE，不就可以读对方的数据了吗？</p>
+<p>出于好奇，我做了如下实验：</p>
+<p>A进程代码：</p>
+<p><img src="/2023/03/21/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A13%E3%80%81%E6%8C%82%E7%89%A9%E7%90%86%E9%A1%B5/15.PNG"></p>
+<p>在A进程中，地址0x0012FF7C的数据为0x12345678，然后启动B进程，B代码如下：</p>
+<p><img src="/2023/03/21/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A13%E3%80%81%E6%8C%82%E7%89%A9%E7%90%86%E9%A1%B5/16.PNG"></p>
+<p>正常来讲这个代码读出来的应该是B进程中0x12ff7c位置的值，肯定读不到0x12345678。我们找到A进程目标地址对应的PTE：</p>
+<p><img src="/2023/03/21/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A13%E3%80%81%E6%8C%82%E7%89%A9%E7%90%86%E9%A1%B5/17.PNG"></p>
+<p>将这个PTE写入B进程0x12ff7c对应的PTE的位置：</p>
+<p><img src="/2023/03/21/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A13%E3%80%81%E6%8C%82%E7%89%A9%E7%90%86%E9%A1%B5/18.PNG"></p>
+<p>然后继续执行B进程，发现能够读取A进程的0x12345678：</p>
+<p><img src="/2023/03/21/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A13%E3%80%81%E6%8C%82%E7%89%A9%E7%90%86%E9%A1%B5/19.PNG"></p>
+<p>虽然我也不知道有啥用，就纯粹出于好奇，做着玩吧。</p>
+<p>但是还有个问题，那就是B进程代码无法正常结束，应该是因为B进程那一页的内存全都映射到A进程的物理页上了，回不来了，所以如果向回来，还要先将PTE改回原来的值。</p>
+
     </div>
 
     
@@ -312,7 +401,10 @@
     <a href="/2023/03/18/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A12%E3%80%8110-10-12%E5%88%86%E9%A1%B5/" rel="prev" title="保护模式：12、10-10-12分页">
       <i class="fa fa-chevron-left"></i> 保护模式：12、10-10-12分页
     </a></div>
-      <div class="post-nav-item"></div>
+      <div class="post-nav-item">
+    <a href="/2023/03/23/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A14%E3%80%81PDE-PTE%E5%B1%9E%E6%80%A7/" rel="next" title="保护模式：14、PDE_PTE属性">
+      保护模式：14、PDE_PTE属性 <i class="fa fa-chevron-right"></i>
+    </a></div>
     </div>
       </footer>
     
@@ -371,6 +463,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#PDE%E4%B8%8EPTE"><span class="nav-number">1.</span> <span class="nav-text">PDE与PTE</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E9%AA%8C"><span class="nav-number">2.</span> <span class="nav-text">实验</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%BB%83%E4%B9%A0"><span class="nav-number">3.</span> <span class="nav-text">练习</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%87%BA%E4%BA%8E%E5%A5%BD%E5%A5%87%E7%9A%84%E6%9C%89%E8%B6%A3%E5%AE%9E%E9%AA%8C"><span class="nav-number">4.</span> <span class="nav-text">出于好奇的有趣实验</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -386,7 +479,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">30</span>
+          <span class="site-state-item-count">31</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
