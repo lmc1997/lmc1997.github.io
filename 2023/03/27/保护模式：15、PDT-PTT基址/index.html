@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.2">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/32x32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/16x16.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":null},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.json"};
+  </script>
+
+  <meta name="description" content="这节课我们来学习页目录表和页表的基址。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="保护模式：15、PDE_PTE基址">
+<meta property="og:url" content="http://example.com/2023/03/27/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A15%E3%80%81PDT-PTT%E5%9F%BA%E5%9D%80/index.html">
+<meta property="og:site_name" content="刘小白的博客">
+<meta property="og:description" content="这节课我们来学习页目录表和页表的基址。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/2023/03/27/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A15%E3%80%81PDT-PTT%E5%9F%BA%E5%9D%80/1.PNG">
+<meta property="og:image" content="http://example.com/2023/03/27/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A15%E3%80%81PDT-PTT%E5%9F%BA%E5%9D%80/2.PNG">
+<meta property="og:image" content="http://example.com/2023/03/27/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A15%E3%80%81PDT-PTT%E5%9F%BA%E5%9D%80/4.PNG">
+<meta property="og:image" content="http://example.com/2023/03/27/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A15%E3%80%81PDT-PTT%E5%9F%BA%E5%9D%80/6.PNG">
+<meta property="og:image" content="http://example.com/2023/03/27/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A15%E3%80%81PDT-PTT%E5%9F%BA%E5%9D%80/7.PNG">
+<meta property="og:image" content="http://example.com/2023/03/27/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A15%E3%80%81PDT-PTT%E5%9F%BA%E5%9D%80/8.PNG">
+<meta property="og:image" content="http://example.com/2023/03/27/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A15%E3%80%81PDT-PTT%E5%9F%BA%E5%9D%80/9.PNG">
+<meta property="og:image" content="http://example.com/2023/03/27/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A15%E3%80%81PDT-PTT%E5%9F%BA%E5%9D%80/10.PNG">
+<meta property="og:image" content="http://example.com/2023/03/27/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A15%E3%80%81PDT-PTT%E5%9F%BA%E5%9D%80/11.PNG">
+<meta property="article:published_time" content="2023-03-27T10:09:26.000Z">
+<meta property="article:modified_time" content="2023-04-11T05:22:11.316Z">
+<meta property="article:author" content="刘小白">
+<meta property="article:tag" content="保护模式">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/2023/03/27/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A15%E3%80%81PDT-PTT%E5%9F%BA%E5%9D%80/1.PNG">
+
+<link rel="canonical" href="http://example.com/2023/03/27/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A15%E3%80%81PDT-PTT%E5%9F%BA%E5%9D%80/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>保护模式：15、PDE_PTE基址 | 刘小白的博客</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+<link rel="alternate" href="/atom.xml" title="刘小白的博客" type="application/atom+xml">
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">刘小白的博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">爱生活爱技术爱女盆友</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+        <i class="fa fa-search fa-fw fa-lg"></i>
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签<span class="badge">4</span></a>
+
+  </li>
+        <li class="menu-item menu-item-categories">
+
+    <a href="/categories/" rel="section"><i class="fa fa-th fa-fw"></i>分类<span class="badge">3</span></a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">33</span></a>
+
+  </li>
+      <li class="menu-item menu-item-search">
+        <a role="button" class="popup-trigger"><i class="fa fa-search fa-fw"></i>搜索
+        </a>
+      </li>
+  </ul>
+</nav>
+
+
+
+  <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+  <span class="search-icon">
+    <i class="fa fa-search"></i>
+  </span>
+  <div class="search-input-container">
+    <input autocomplete="off" autocapitalize="off"
+           placeholder="搜索..." spellcheck="false"
+           type="search" class="search-input">
+  </div>
+  <span class="popup-btn-close">
+    <i class="fa fa-times-circle"></i>
+  </span>
+</div>
+<div id="search-result">
+  <div id="no-result">
+    <i class="fa fa-spinner fa-pulse fa-5x fa-fw"></i>
+  </div>
+</div>
+
+    </div>
+  </div>
+
+</div>
+    </header>
+
+    
+
+  <a href="https://github.com/lmc1997" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2023/03/27/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A15%E3%80%81PDT-PTT%E5%9F%BA%E5%9D%80/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/me.jpg">
+      <meta itemprop="name" content="刘小白">
+      <meta itemprop="description" content="Windows、逆向、C/C++、学习、生活">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="刘小白的博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          保护模式：15、PDE_PTE基址
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2023-03-27 18:09:26" itemprop="dateCreated datePublished" datetime="2023-03-27T18:09:26+08:00">2023-03-27</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-04-11 13:22:11" itemprop="dateModified" datetime="2023-04-11T13:22:11+08:00">2023-04-11</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">分类于</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F/" itemprop="url" rel="index"><span itemprop="name">保护模式</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>这节课我们来学习页目录表和页表的基址。</p>
+<span id="more"></span>
+
+<h1 id="4GB的拆分"><a href="#4GB的拆分" class="headerlink" title="4GB的拆分"></a>4GB的拆分</h1><p>我们首先来拆分两个进程的4GB虚拟地址，观察两个进程中相同的虚拟地址对应的PDE、PTE以及物理页，并寻找一些规律。具体的拆分步骤大家可以自己尝试，这里直接说结论：</p>
+<ol>
+<li>在这两个进程中，低2G（00000000 – 7FFFFFFF）对应的PDE与PTE几乎不同。</li>
+<li>在这两个进程中，高2G（80000000 – FFFFFFFF）对应的PDE与PTE几乎相同。</li>
+<li>低2G（00000000 – 7FFFFFFF）的前64K和后64K都是没有映射的。</li>
+<li>在高2G虚拟地址中，可以发现，虚拟地址0xC0300000对应的物理页就是PDT，虚拟地址0xC0000000对应的物理页就是0地址的PTT，并且从这个地址开始后面的每一页都是PTT。</li>
+</ol>
+<p>具体拆分的过程如下：</p>
+<p><img src="/2023/03/27/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A15%E3%80%81PDT-PTT%E5%9F%BA%E5%9D%80/1.PNG"></p>
+<p>可以看到，我们的目标进程的CR3为2a06a000，这也就是PDT的物理地址。下面我们来根据这个CR3来拆分0xC030000这个虚拟地址：</p>
+<p><img src="/2023/03/27/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A15%E3%80%81PDT-PTT%E5%9F%BA%E5%9D%80/2.PNG"></p>
+<p>在上图中我们可以看到，0xC030000这个地址对应的物理页，与PDT的地址和内容都一样，这个物理页就是PDT。也就是说，在这个进程的4GB虚拟地址空间中，该虚拟地址保存的内容就是PDT表的内容。</p>
+<p>同理我们来拆分一下虚拟地址0xC0000000的物理页：</p>
+<p><img src="/2023/03/27/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A15%E3%80%81PDT-PTT%E5%9F%BA%E5%9D%80/4.PNG"></p>
+<p>我们的目标进程的CR3为0x1357d000，当我们想要查看虚拟地址0xC0000000的内容（也就是查看该地址的物理页）时，输入的命令依次为上图中的1、2、3语句，而当我们想要查看0地址对应的PTT时，输入的命令依次为上图中的2、3语句。</p>
+<p>此时我们可以得到结论，0xC0300000存储的是PDT表，0xC0000000存储的是第一张PTT表。</p>
+<h1 id="PDT和PTT的基址"><a href="#PDT和PTT的基址" class="headerlink" title="PDT和PTT的基址"></a>PDT和PTT的基址</h1><p>为什么需要PDT和PTT有基址呢？</p>
+<p>试想一下，在操作系统程序中，当它想让一个地址可以访问的时候，必须要给这个线性地址挂上物理页，也就是填写正确的PDE和PTE。也就是说，程序必须要能够访问PDT和PTT这两张表，才能填写里面的内容。可是，这两张表都位于物理地址上，基址都是物理地址，程序无法访问。因此，在程序4GB进程空间的某个地方，一定保存着PDT和PTT。</p>
+<p>先来看一下在进程的4GB虚拟地址空间中PDT和PTT表的概览图：</p>
+<p><img src="/2023/03/27/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A15%E3%80%81PDT-PTT%E5%9F%BA%E5%9D%80/6.PNG"></p>
+<p>下面我们来依次看一下在这4GB虚拟地址空间中的PDT和PTT：</p>
+<p><strong>PDT：</strong></p>
+<ol>
+<li>从虚拟地址 0xC0300000 开始的一页，就是页目录表PDT。</li>
+<li>这个物理页既是页目录表，本身也是页表。</li>
+<li>页目录表是一张特殊的页表，其中的每一项指向的不是普通的物理页，而是指向其他的页表（其中第0x300项指向的是自己这张页表）。</li>
+</ol>
+<p><strong>PTT：</strong></p>
+<p>从前面学习的知识我们知道，每一张PTT都是由PDT中的PDE指向的，那么在进程的4GB虚拟地址空间中，我们是否能通过 0xC0300000 这张PDT找到其他PTT呢？</p>
+<p>答案是不能。因为尽管PTT是由 0xC0300000 这张PDT中的PDE指向的，但里面存的值仍然是物理地址，在程序中还是无法使用这个地址。</p>
+<ol>
+<li>页表被映射到了从 0xC0000000 到 0xC03FFFFF 的4M地址空间。</li>
+<li>在这1024个表中有一张特殊的表：页目录表。</li>
+<li>0xC0000000是第一张页表的地址，后面的页表紧挨着分布。</li>
+</ol>
+<p><strong>公式总结：</strong></p>
+<ol>
+<li><p>什么是PDI和PTI？</p>
+<p>在10-10-12中，第一个10就是PDI，第二个10就是PTI。</p>
+</li>
+<li><p>访问页目录表的公式（修改PDE）</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">0xC0300000 + PDI*4</span><br></pre></td></tr></table></figure>
+</li>
+<li><p>访问页表的公式（修改PTE）</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">0xC0000000 + PDI*4096 + PTI*4</span><br></pre></td></tr></table></figure></li>
+</ol>
+<p>掌握了这两个地址及公式，就掌握了一个进程所有的物理内存的读写权限。</p>
+<h1 id="课后练习"><a href="#课后练习" class="headerlink" title="课后练习"></a>课后练习</h1><p><strong>问题：</strong></p>
+<p>一、通过代码实现挂物理页</p>
+<p>二、逆向分析MmlsAddressValid()函数</p>
+<p><strong>答案：</strong></p>
+<p>一、代码如下：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;stdafx.h&quot;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;windows.h&gt;</span></span></span><br><span class="line"><span class="type">int</span>* addr;</span><br><span class="line"><span class="comment">//提权后执行的函数，地址为0x00401030，有2个参数分别是要挂物理页的地址和要使用的临时的地址</span></span><br><span class="line"><span class="type">void</span> _declspec(naked) <span class="built_in">MakeMemoryPage</span>()</span><br><span class="line">&#123;</span><br><span class="line">	_asm</span><br><span class="line">	&#123;</span><br><span class="line">		<span class="comment">//int 3</span></span><br><span class="line">		pushad		<span class="comment">//8个寄存器，32个字节</span></span><br><span class="line">		pushfd		<span class="comment">//标志寄存器，4个字节</span></span><br><span class="line">		</span><br><span class="line">		mov eax,[esp+<span class="number">0x24</span>+<span class="number">0x8</span>]</span><br><span class="line">		shr eax,<span class="number">0</span>ah</span><br><span class="line">		<span class="keyword">and</span> eax,<span class="number">3F</span>FFFCh</span><br><span class="line">		sub eax,<span class="number">40000000</span>h	<span class="comment">//此时eax为目标PTE的地址</span></span><br><span class="line">		mov eax,[eax]</span><br><span class="line"></span><br><span class="line">		mov ecx,[esp+<span class="number">0x24</span>+<span class="number">0x8</span>+<span class="number">0x4</span>]</span><br><span class="line">		shr ecx,<span class="number">0</span>ah</span><br><span class="line">		<span class="keyword">and</span> ecx,<span class="number">3F</span>FFFCh</span><br><span class="line">		sub ecx,<span class="number">40000000</span>h	<span class="comment">//此时ecx指向目标地址对应的PTE</span></span><br><span class="line">		mov [ecx],eax</span><br><span class="line"></span><br><span class="line">		popfd</span><br><span class="line">		popad</span><br><span class="line"></span><br><span class="line">		<span class="comment">//int 3</span></span><br><span class="line">		retf <span class="number">0x8</span>	<span class="comment">//注意堆栈平衡，写错蓝屏</span></span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="type">int</span> <span class="title">main</span><span class="params">(<span class="type">void</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="comment">//先用调用门有参数提权</span></span><br><span class="line">	<span class="type">int</span> temp = <span class="number">0x66666666</span>;</span><br><span class="line">	<span class="type">int</span>* Temp_addr = &amp;temp;</span><br><span class="line">	addr = <span class="number">0</span>;</span><br><span class="line">	<span class="type">char</span> buff[<span class="number">6</span>];</span><br><span class="line">	*(DWORD*)&amp;buff[<span class="number">0</span>] = <span class="number">0x12345678</span>;</span><br><span class="line">	*(WORD*)&amp;buff[<span class="number">4</span>] = <span class="number">0x48</span>;		<span class="comment">//buff[6] = &#123;0x78, 0x56, 0x34, 0x12, 0x48, 0x00&#125;</span></span><br><span class="line">	_asm</span><br><span class="line">	&#123;</span><br><span class="line">		push addr</span><br><span class="line">		push Temp_addr</span><br><span class="line"></span><br><span class="line">		call fword ptr[buff]</span><br><span class="line">	&#125;</span><br><span class="line">	*addr = <span class="number">0x12345678</span>;</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;挂物理页后0地址的值为:%x\n&quot;</span>, *addr);</span><br><span class="line">	<span class="built_in">getchar</span>();</span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>解释一下上段代码，首先申请了一个临时变量temp，随便赋值，我们需要将这个临时变量所在的物理页挂给目标地址（这里是0地址），也就是将这个临时变量的地址对应的PTE写入0地址对应的PTE上。因此，我这里将0地址和这个临时变量的地址作为参数压入堆栈，通过调用门有参数提权，进入MakeMemoryPage()函数。在该函数内部，实现PTE的赋值。寻找PTE的方法的解释参考第二题对MmlsAddressValid()函数的逆向分析。</p>
+<p>在windbg中修改GDT表：</p>
+<p><img src="/2023/03/27/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A15%E3%80%81PDT-PTT%E5%9F%BA%E5%9D%80/7.PNG"></p>
+<p>运行结果如下：</p>
+<p><img src="/2023/03/27/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A15%E3%80%81PDT-PTT%E5%9F%BA%E5%9D%80/8.PNG"></p>
+<p>二、MmlsAddressValid()函数为内核函数，作用为判断地址是否有效</p>
+<p>可以在windbg中，输入u MmIsAddressValid L20查看该函数的汇编代码：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">kd&gt; u MmIsAddressValid L20</span><br><span class="line">nt!MmIsAddressValid:</span><br><span class="line">804e4661 8bff            mov     edi,edi</span><br><span class="line">804e4663 55              push    ebp</span><br><span class="line">804e4664 8bec            mov     ebp,esp</span><br><span class="line">804e4666 8b4d08          mov     ecx,dword ptr [ebp+8]</span><br><span class="line">804e4669 8bc1            mov     eax,ecx</span><br><span class="line">804e466b c1e814          shr     eax,14h</span><br><span class="line">804e466e bafc0f0000      mov     edx,0FFCh</span><br><span class="line">804e4673 23c2            and     eax,edx</span><br><span class="line">804e4675 2d0000d03f      sub     eax,3FD00000h</span><br><span class="line">804e467a 8b00            mov     eax,dword ptr [eax]</span><br><span class="line">804e467c a801            test    al,1</span><br><span class="line">804e467e 0f84d2f10000    je      nt!MmIsAddressValid+0x4f (804f3856)</span><br><span class="line">804e4684 84c0            test    al,al</span><br><span class="line">804e4686 7824            js      nt!MmIsAddressValid+0x53 (804e46ac)</span><br><span class="line">804e4688 c1e90a          shr     ecx,0Ah</span><br><span class="line">804e468b 81e1fcff3f00    and     ecx,3FFFFCh</span><br><span class="line">804e4691 81e900000040    sub     ecx,40000000h</span><br><span class="line">804e4697 8bc1            mov     eax,ecx</span><br><span class="line">804e4699 8b08            mov     ecx,dword ptr [eax]</span><br><span class="line">804e469b f6c101          test    cl,1</span><br><span class="line">804e469e 0f84b2f10000    je      nt!MmIsAddressValid+0x4f (804f3856)</span><br><span class="line">804e46a4 84c9            test    cl,cl</span><br><span class="line">804e46a6 0f88b6de0300    js      nt!MmIsAddressValid+0x3f (80522562)</span><br><span class="line">804e46ac b001            mov     al,1</span><br><span class="line">804e46ae 5d              pop     ebp</span><br><span class="line">804e46af c20400          ret     4</span><br></pre></td></tr></table></figure>
+
+<p>或者在xp下的c:\windows\system32\ 中找到内核程序，用IDA分析。其中ntkrnlpa.exe 为2-9-9-12 分页内核程序，ntoskrnl.exe 为10-10-12 分页内核程序。</p>
+<p><img src="/2023/03/27/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A15%E3%80%81PDT-PTT%E5%9F%BA%E5%9D%80/9.PNG"></p>
+<p>用IDA打开该文件，全局搜索Ctrl+t，所搜字符串</p>
+<p><img src="/2023/03/27/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A15%E3%80%81PDT-PTT%E5%9F%BA%E5%9D%80/10.PNG"></p>
+<p>函数分析如下：</p>
+<p><img src="/2023/03/27/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A15%E3%80%81PDT-PTT%E5%9F%BA%E5%9D%80/11.PNG"></p>
+
+    </div>
+
+    
+    
+    
+
+<div>
+  
+    <div>
+    
+        <div style="text-align:center;color: #ccc;font-size:14px;">-------------已经读到底啦 <i class="fa fa-shower"></i> 感谢阅读哦~-------------</div>
+    
+</div>
+
+  
+</div>
+        <div class="reward-container">
+  <div>不赌天意，不猜人心.</div>
+  <button onclick="var qr = document.getElementById('qr'); qr.style.display = (qr.style.display === 'none') ? 'block' : 'none';">
+    打赏
+  </button>
+  <div id="qr" style="display: none;">
+      
+      <div style="display: inline-block;">
+        <img src="/images/wechatpay.jpg" alt="刘小白 微信支付">
+        <p>微信支付</p>
+      </div>
+      
+      <div style="display: inline-block;">
+        <img src="/images/alipay.jpg" alt="刘小白 支付宝">
+        <p>支付宝</p>
+      </div>
+
+  </div>
+</div>
+
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>刘小白
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="http://example.com/2023/03/27/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A15%E3%80%81PDT-PTT%E5%9F%BA%E5%9D%80/" title="保护模式：15、PDE_PTE基址">http://example.com/2023/03/27/保护模式：15、PDT-PTT基址/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+          <div class="post-tags">
+              <a href="/tags/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F/" rel="tag"><i class="fa fa-tag"></i>
+		保护模式</a>
+          </div>
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2023/03/23/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A14%E3%80%81PDE-PTE%E5%B1%9E%E6%80%A7/" rel="prev" title="保护模式：14、PDE_PTE属性">
+      <i class="fa fa-chevron-left"></i> 保护模式：14、PDE_PTE属性
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2023/04/11/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A16%E3%80%812-9-9-12%E5%88%86%E9%A1%B5/" rel="next" title="保护模式：16、2-9-9-12分页">
+      保护模式：16、2-9-9-12分页 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#4GB%E7%9A%84%E6%8B%86%E5%88%86"><span class="nav-number">1.</span> <span class="nav-text">4GB的拆分</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#PDT%E5%92%8CPTT%E7%9A%84%E5%9F%BA%E5%9D%80"><span class="nav-number">2.</span> <span class="nav-text">PDT和PTT的基址</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%AF%BE%E5%90%8E%E7%BB%83%E4%B9%A0"><span class="nav-number">3.</span> <span class="nav-text">课后练习</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="刘小白"
+      src="/images/me.jpg">
+  <p class="site-author-name" itemprop="name">刘小白</p>
+  <div class="site-description" itemprop="description">Windows、逆向、C/C++、学习、生活</div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">33</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+            <a href="/categories/">
+          
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">分类</span></a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">4</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="">
+    <a target="_blank" class="social-link" href="/atom.xml" style="color: burlywood;">
+      <span class="icon">
+        <i class="fa fa-rss"></i>
+      </span>
+      <span class="label">RSS</span>
+    </a>
+  </div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="mailto:1716281594@qq.com" title="E-Mail → mailto:1716281594@qq.com" rel="noopener" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="https://github.com/lmc1997" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;lmc1997" rel="noopener" target="_blank"><i class="fa fa-star fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 2022 – 
+  <span itemprop="copyrightYear">2023</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">刘小白</span>
+</div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  
+  <script color='0,0,0' opacity='0.5' zIndex='-1' count='150' src="/lib/canvas-nest/canvas-nest.min.js"></script>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/pisces.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+  
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+<script src="/live2dw/lib/L2Dwidget.min.js?094cbace49a39548bed64abff5988b05"></script><script>L2Dwidget.init({"pluginRootPath":"live2dw/","pluginJsPath":"lib/","pluginModelPath":"assets/","tagMode":false,"model":{"jsonPath":"/live2dw/assets/wanko.model.json"},"display":{"position":"right","width":150,"height":300},"mobile":{"show":true},"log":false});</script></body>
+</html>
+<!-- 页面点击小红心 -->
+<script type="text/javascript" src="/js/src/clicklove.js"></script>
+

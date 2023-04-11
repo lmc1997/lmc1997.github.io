@@ -20,18 +20,22 @@
     var CONFIG = {"hostname":"example.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":null},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.json"};
   </script>
 
-  <meta name="description" content="测试">
+  <meta name="description" content="上节课我们学习了10-10-12分页是如何找到物理内存的，并了解了PDE和PTE，通过修改PTE达到了挂物理页的效果。这节课来学习PDE和PTE的属性。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="保护模式：14、PDE_PTE属性">
 <meta property="og:url" content="http://example.com/2023/03/23/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A14%E3%80%81PDE-PTE%E5%B1%9E%E6%80%A7/index.html">
 <meta property="og:site_name" content="刘小白的博客">
-<meta property="og:description" content="测试">
+<meta property="og:description" content="上节课我们学习了10-10-12分页是如何找到物理内存的，并了解了PDE和PTE，通过修改PTE达到了挂物理页的效果。这节课来学习PDE和PTE的属性。">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/2023/03/23/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A14%E3%80%81PDE-PTE%E5%B1%9E%E6%80%A7/1.PNG">
+<meta property="og:image" content="http://example.com/2023/03/23/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A14%E3%80%81PDE-PTE%E5%B1%9E%E6%80%A7/2.PNG">
+<meta property="og:image" content="http://example.com/2023/03/23/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A14%E3%80%81PDE-PTE%E5%B1%9E%E6%80%A7/3.PNG">
 <meta property="article:published_time" content="2023-03-23T10:45:34.000Z">
-<meta property="article:modified_time" content="2023-03-23T10:46:38.990Z">
+<meta property="article:modified_time" content="2023-04-03T11:24:18.404Z">
 <meta property="article:author" content="刘小白">
 <meta property="article:tag" content="保护模式">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/2023/03/23/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A14%E3%80%81PDE-PTE%E5%B1%9E%E6%80%A7/1.PNG">
 
 <link rel="canonical" href="http://example.com/2023/03/23/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A14%E3%80%81PDE-PTE%E5%B1%9E%E6%80%A7/">
 
@@ -138,7 +142,7 @@
   </li>
         <li class="menu-item menu-item-archives">
 
-    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">31</span></a>
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">33</span></a>
 
   </li>
       <li class="menu-item menu-item-search">
@@ -216,10 +220,16 @@
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
-              
 
-              <time title="创建时间：2023-03-23 18:45:34 / 修改时间：18:46:38" itemprop="dateCreated datePublished" datetime="2023-03-23T18:45:34+08:00">2023-03-23</time>
+              <time title="创建时间：2023-03-23 18:45:34" itemprop="dateCreated datePublished" datetime="2023-03-23T18:45:34+08:00">2023-03-23</time>
             </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-04-03 19:24:18" itemprop="dateModified" datetime="2023-04-03T19:24:18+08:00">2023-04-03</time>
+              </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
                 <i class="far fa-folder"></i>
@@ -241,8 +251,45 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p>测试</p>
+        <p>上节课我们学习了10-10-12分页是如何找到物理内存的，并了解了PDE和PTE，通过修改PTE达到了挂物理页的效果。这节课来学习PDE和PTE的属性。</p>
 <span id="more"></span>
+
+<h1 id="PDE和PTE属性"><a href="#PDE和PTE属性" class="headerlink" title="PDE和PTE属性"></a>PDE和PTE属性</h1><p>先来看一下上节课我们找的PDE和PTE的图：</p>
+<p><img src="/2023/03/23/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A14%E3%80%81PDE-PTE%E5%B1%9E%E6%80%A7/1.PNG"></p>
+<p>在使用PDE和PTE的时候，我们将它们的低3位十六进制舍弃，并通过补0的方式，获得物理页的基址。这低3位十六进制（12位二进制）就是PDE和PTE的属性，如图：</p>
+<p><img src="/2023/03/23/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A14%E3%80%81PDE-PTE%E5%B1%9E%E6%80%A7/2.PNG"></p>
+<p>在上一节课中，我们通过给0地址挂物理页的方式，使其能够被读写。其实，0地址能被读写，不仅仅是因为有了对应的物理页，还需要物理页有效并且具有可读写的属性等。<strong>物理页的属性 &#x3D; PDE属性 &amp; PTE属性</strong>。下面我们依次来看这些属性。</p>
+<p><strong>1、P位</strong></p>
+<p>P &#x3D; 0，物理页无效。</p>
+<p>P &#x3D; 1，物理页有效。</p>
+<p>看PDE与PTE时，先看P位，P位为1时才有效。注意，如果PTE中P位&#x3D;0，影响的是一页4KB，而如果是PDE中P位&#x3D;0，影响的是这1024项所指向的页。</p>
+<p><strong>2、R&#x2F;W位</strong></p>
+<p>R&#x2F;W &#x3D; 0，只读。</p>
+<p>R&#x2F;W &#x3D; 1，可读可写。</p>
+<p>这里可以做一个实验，就是一个const只读字符串常量，正常情况下是不允许通过字符串地址对字符串的值进行修改的，但是为什么不能改呢？是谁限制了呢？答案就是页。把地址对应的PDE和PTE里面的属性改为可读可写即可。</p>
+<p><strong>3、U&#x2F;S位</strong></p>
+<p>U&#x2F;S &#x3D; 0，特权用户。</p>
+<p>U&#x2F;S &#x3D; 1，普通用户。</p>
+<p>这里可以做一个实验，通过修改一个高2G线性地址对应的PDE和PTE的属性，实现ring3对高2G的读写。</p>
+<p>注意区分段页。前面学习段时对高2G内存的读写，是通过提权，将ring3提升到ring0来实现的。而现在是不提权，仍然在ring3实现读取。</p>
+<p><strong>4、PS位</strong></p>
+<p>看到上面的属性图中，只有PDE有PS位，说明PS位只对PDE有意，PS &#x3D; PageSize。</p>
+<p>PS &#x3D; 1，说明PDE直接指向物理页，没有PTE，此时虚拟线性地址只能分成两部分，高10位寻找PDE，低22位（10+12）是页内偏移。此时一个物理页的大小为2^22 &#x3D; 4MB，俗称“大页”。</p>
+<p>这里也可以做一个实验：分析线性地址0x8043F00C的PDE属性。</p>
+<p><strong>5、A位</strong></p>
+<p>表示物理页是否被访问过，被访问过置1，即使只访问一个字节也会导致PDE和PTE的A位置1。</p>
+<p><strong>6、D位</strong></p>
+<p>表示物理页是否被写过，也就是俗称的“脏页”。</p>
+<p>D &#x3D; 0，该物理页没有被写过。</p>
+<p>D &#x3D; 1，该物理页被写过。</p>
+<p><strong>7、关于G位、PWT位、PCD位</strong></p>
+<p>学完控制寄存器与TLB才能讲，此处略过。</p>
+<h1 id="一些补充"><a href="#一些补充" class="headerlink" title="一些补充"></a>一些补充</h1><p>在上面PDE和PTE的属性图中，可以看到PDE和PTE中的第9、10、11位没有标识，说明这三位目前没用，是留给操作系统用的。</p>
+<p>此外，再想象一下如下场景：当A进程在自己的线性地址0x12345678处存了一个10，然后操作系统发现物理内存紧张了，正好发现A进程0x12345678地址对应的那个物理页不常用，于是将这个物理页的内容存在了一个文件里，然后将这个物理页挪作他用。此时，A进程0x12345678对应的PTE要改吗？</p>
+<p>要改，因为要是不改的话，下次再读取0x12345678这个的地址的数据，读出来的就不是10了，而是别的进程的内存。那么怎么改呢？首先得将P位改成0，然后CPU再次访问这个地址的时候，会产生缺页异常，对应IDT表中的0xe号中断。不管是PDE还是PTE，只要是CPU见到P位为0，就走e号中断。在这个e号中断中，操作系统就会根据这9、10、11位来判断，这个PTE无效的原因，是因为没有分配还是被换掉了。如果符合物理页被换掉的情况，那么操作系统就给这个PTE挂一个空白的物理页，然后将原先写入的那个内存文件的内容写回到这个空白页上。</p>
+<p><img src="/2023/03/23/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A14%E3%80%81PDE-PTE%E5%B1%9E%E6%80%A7/3.PNG"></p>
+<p>缺页是无时无刻不在发生的。具体内容我们等到物理内存管理时再讲。</p>
+
     </div>
 
     
@@ -312,7 +359,10 @@
     <a href="/2023/03/21/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A13%E3%80%81%E6%8C%82%E7%89%A9%E7%90%86%E9%A1%B5/" rel="prev" title="保护模式：13、挂物理页">
       <i class="fa fa-chevron-left"></i> 保护模式：13、挂物理页
     </a></div>
-      <div class="post-nav-item"></div>
+      <div class="post-nav-item">
+    <a href="/2023/03/27/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A15%E3%80%81PDT-PTT%E5%9F%BA%E5%9D%80/" rel="next" title="保护模式：15、PDE_PTE基址">
+      保护模式：15、PDE_PTE基址 <i class="fa fa-chevron-right"></i>
+    </a></div>
     </div>
       </footer>
     
@@ -371,6 +421,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#PDE%E5%92%8CPTE%E5%B1%9E%E6%80%A7"><span class="nav-number">1.</span> <span class="nav-text">PDE和PTE属性</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E4%B8%80%E4%BA%9B%E8%A1%A5%E5%85%85"><span class="nav-number">2.</span> <span class="nav-text">一些补充</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -386,7 +437,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">31</span>
+          <span class="site-state-item-count">33</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
