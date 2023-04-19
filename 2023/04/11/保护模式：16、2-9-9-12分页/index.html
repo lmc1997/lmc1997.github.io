@@ -20,18 +20,36 @@
     var CONFIG = {"hostname":"example.com","root":"/","scheme":"Gemini","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":null},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.json"};
   </script>
 
-  <meta name="description" content="测试">
+  <meta name="description" content="前面学习了10-10-12分页模式，在这种分页模式下，最多可以寻址4GB物理内存。但是随着硬件的发展，4GB的物理内存范围慢慢无法满足要求了，那么怎么才能扩大物理内存的寻址范围呢？Intel涉及了新的分页模式，就是本节课要学习的2-9-9-12分页，又称为PAE（物理地址扩展）分页。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="保护模式：16、2-9-9-12分页">
 <meta property="og:url" content="http://example.com/2023/04/11/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A16%E3%80%812-9-9-12%E5%88%86%E9%A1%B5/index.html">
 <meta property="og:site_name" content="刘小白的博客">
-<meta property="og:description" content="测试">
+<meta property="og:description" content="前面学习了10-10-12分页模式，在这种分页模式下，最多可以寻址4GB物理内存。但是随着硬件的发展，4GB的物理内存范围慢慢无法满足要求了，那么怎么才能扩大物理内存的寻址范围呢？Intel涉及了新的分页模式，就是本节课要学习的2-9-9-12分页，又称为PAE（物理地址扩展）分页。">
 <meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://example.com/2023/04/11/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A16%E3%80%812-9-9-12%E5%88%86%E9%A1%B5/1.PNG">
+<meta property="og:image" content="http://example.com/2023/04/11/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A16%E3%80%812-9-9-12%E5%88%86%E9%A1%B5/2.PNG">
+<meta property="og:image" content="http://example.com/2023/04/11/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A16%E3%80%812-9-9-12%E5%88%86%E9%A1%B5/3.PNG">
+<meta property="og:image" content="http://example.com/2023/04/11/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A16%E3%80%812-9-9-12%E5%88%86%E9%A1%B5/4.PNG">
+<meta property="og:image" content="http://example.com/2023/04/11/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A16%E3%80%812-9-9-12%E5%88%86%E9%A1%B5/5.PNG">
+<meta property="og:image" content="http://example.com/2023/04/11/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A16%E3%80%812-9-9-12%E5%88%86%E9%A1%B5/16.PNG">
+<meta property="og:image" content="http://example.com/2023/04/11/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A16%E3%80%812-9-9-12%E5%88%86%E9%A1%B5/6.PNG">
+<meta property="og:image" content="http://example.com/2023/04/11/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A16%E3%80%812-9-9-12%E5%88%86%E9%A1%B5/7.PNG">
+<meta property="og:image" content="http://example.com/2023/04/11/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A16%E3%80%812-9-9-12%E5%88%86%E9%A1%B5/8.PNG">
+<meta property="og:image" content="http://example.com/2023/04/11/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A16%E3%80%812-9-9-12%E5%88%86%E9%A1%B5/9.PNG">
+<meta property="og:image" content="http://example.com/2023/04/11/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A16%E3%80%812-9-9-12%E5%88%86%E9%A1%B5/10.PNG">
+<meta property="og:image" content="http://example.com/2023/04/11/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A16%E3%80%812-9-9-12%E5%88%86%E9%A1%B5/11.PNG">
+<meta property="og:image" content="http://example.com/2023/04/11/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A16%E3%80%812-9-9-12%E5%88%86%E9%A1%B5/12.PNG">
+<meta property="og:image" content="http://example.com/2023/04/11/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A16%E3%80%812-9-9-12%E5%88%86%E9%A1%B5/13.PNG">
+<meta property="og:image" content="http://example.com/2023/04/11/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A16%E3%80%812-9-9-12%E5%88%86%E9%A1%B5/14.PNG">
+<meta property="og:image" content="http://example.com/2023/04/11/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A16%E3%80%812-9-9-12%E5%88%86%E9%A1%B5/15.PNG">
+<meta property="og:image" content="http://example.com/2023/04/11/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A16%E3%80%812-9-9-12%E5%88%86%E9%A1%B5/17.PNG">
 <meta property="article:published_time" content="2023-04-11T05:42:59.000Z">
-<meta property="article:modified_time" content="2023-04-11T05:44:12.246Z">
+<meta property="article:modified_time" content="2023-04-19T11:57:13.196Z">
 <meta property="article:author" content="刘小白">
 <meta property="article:tag" content="保护模式">
 <meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/2023/04/11/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A16%E3%80%812-9-9-12%E5%88%86%E9%A1%B5/1.PNG">
 
 <link rel="canonical" href="http://example.com/2023/04/11/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A16%E3%80%812-9-9-12%E5%88%86%E9%A1%B5/">
 
@@ -138,7 +156,7 @@
   </li>
         <li class="menu-item menu-item-archives">
 
-    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">33</span></a>
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档<span class="badge">34</span></a>
 
   </li>
       <li class="menu-item menu-item-search">
@@ -216,10 +234,16 @@
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">发表于</span>
-              
 
-              <time title="创建时间：2023-04-11 13:42:59 / 修改时间：13:44:12" itemprop="dateCreated datePublished" datetime="2023-04-11T13:42:59+08:00">2023-04-11</time>
+              <time title="创建时间：2023-04-11 13:42:59" itemprop="dateCreated datePublished" datetime="2023-04-11T13:42:59+08:00">2023-04-11</time>
             </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2023-04-19 19:57:13" itemprop="dateModified" datetime="2023-04-19T19:57:13+08:00">2023-04-19</time>
+              </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
                 <i class="far fa-folder"></i>
@@ -241,8 +265,95 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <p>测试</p>
+        <p>前面学习了10-10-12分页模式，在这种分页模式下，最多可以寻址4GB物理内存。但是随着硬件的发展，4GB的物理内存范围慢慢无法满足要求了，那么怎么才能扩大物理内存的寻址范围呢？Intel涉及了新的分页模式，就是本节课要学习的2-9-9-12分页，又称为PAE（物理地址扩展）分页。</p>
 <span id="more"></span>
+
+<h1 id="如何扩大物理内存寻址"><a href="#如何扩大物理内存寻址" class="headerlink" title="如何扩大物理内存寻址"></a>如何扩大物理内存寻址</h1><p>回顾一下，在10-10-12分页中，为什么物理地址的寻址范围是4GB呢？</p>
+<p>首先规定好了一个物理页的大小为4K（4096字节），每一个物理页基址都是由PTE指定的。在10-10-12中，PTE长度为4字节，也就是32位。因此在这种分页模式下，可寻址的物理内存范围就是 2^32&#x3D;4GB。</p>
+<p>因此，想要增大物理内存范围，就需要扩大PTE的长度。考虑到对其的因素，扩大后的PTE长度为8个字节。这样一来，由于一页的大小还是4K，因此一张PTT表中的PTE数量就变成了512，2^9&#x3D;512，需要9位二进制作为索引就能访问每一个PTE，这就是2-9-9-12中的第二个9。</p>
+<p>同理，PDE也扩展为8字节，PDT表中有512项PDE，也需要9位二进制索引才能访问。</p>
+<p>那么对于32位虚拟线性地址，32-9-9-12&#x3D;2，还剩下两位怎么办呢？看下PAE分页模式的概览图：</p>
+<p><img src="/2023/04/11/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A16%E3%80%812-9-9-12%E5%88%86%E9%A1%B5/1.PNG"></p>
+<p>PAE模式比原来的10-10-12分页多了一级表，叫做页目录指针表（PDPTT），基址由CR3指向。在这张表中有4项PDPTE，分别指向了其他PDT表。</p>
+<p>这样一来，能寻址的物理地址范围由原来的32位（4G）变成了36位（64G）。</p>
+<p>还有一点需要注意的是，PDPTT这张表是由CR3指向的，而CR3寄存器长度还是32位不变，因此PDPTT这张表一定位于物理地址的4GB以内，而PDT和PTT是可以高于4G的。</p>
+<p>可以在boot.ini文件中，将execute改为noexecute并重启，即可开启PAE分页模式。</p>
+<h1 id="结构解析"><a href="#结构解析" class="headerlink" title="结构解析"></a>结构解析</h1><p><strong>一、PDPTE</strong></p>
+<p>结构如下：</p>
+<p><img src="/2023/04/11/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A16%E3%80%812-9-9-12%E5%88%86%E9%A1%B5/2.PNG"></p>
+<p>第0位（P位）永远为1；PWT和PCD位得等到TLB等讲完以后再说；Avail留给操作系统用。</p>
+<p>35-12 存储的是PDT页目录表的基址，低12位补0，共36位，得到PDT页目录基址。</p>
+<p><strong>二、PDE</strong></p>
+<p>结构如下：</p>
+<p><img src="/2023/04/11/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A16%E3%80%812-9-9-12%E5%88%86%E9%A1%B5/3.PNG"></p>
+<p><img src="/2023/04/11/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A16%E3%80%812-9-9-12%E5%88%86%E9%A1%B5/4.PNG"></p>
+<p>当第7位（PS位）为1时，35-21位是大页的物理地址，36位的物理地址低21位为0。此时PDE直接指向物理页，物理页的大小为2^21&#x3D;2M，且都是2M对齐。</p>
+<p>当PS &#x3D; 0时，35-12位是PTT页表基址,低12位补0，共36位。</p>
+<p>注意第7位（PS位）和第8位（G位），当对应大页时，G位用来标识是否是全局页。当对应小页时，PDE指向的不是物理页，而是PTE，G位永远为0。</p>
+<p><strong>三、PTE</strong></p>
+<p>结构如下：</p>
+<p><img src="/2023/04/11/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A16%E3%80%812-9-9-12%E5%88%86%E9%A1%B5/5.PNG"></p>
+<p>PTE中35-12是物理页基址，24位，低12位补0。物理页基址+12位的页内偏移指向具体数据。</p>
+<p><strong>四、XD位（DEP防护）</strong></p>
+<p>回想一下，在学习段的时候，在段属性中有一个属性叫做是否可执行，但是在10-10-12模式下页的属性里面没有这个属性。于是就在2-9-9-12模式下新增加了一个属性叫做XD位，来控制是否可执行，让数据的页不能当作代码来执行。</p>
+<p>从汇编代码的角度来说，如何区分可读可写可执行呢？拿mov指令来说，能作为源操作数的是可读的，能作为目的操作数的是可写的，能赋值给EIP的是可执行的。</p>
+<p>XD位位于PDE和PTE的最高位：</p>
+<p><img src="/2023/04/11/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A16%E3%80%812-9-9-12%E5%88%86%E9%A1%B5/16.PNG"></p>
+<p>当X位置1时，即使EIP指向了数据区，也不会执行。</p>
+<h1 id="课堂练习"><a href="#课堂练习" class="headerlink" title="课堂练习"></a>课堂练习</h1><p>问题：在2-9-9-12分页模式下练习寻找物理地址。</p>
+<p>答案：打开记事本写入字符串，并用ce定位，字符串地址为0x010827B8</p>
+<p><img src="/2023/04/11/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A16%E3%80%812-9-9-12%E5%88%86%E9%A1%B5/6.PNG"></p>
+<p>0x010827B8拆开为：00&#x2F;00 0001 000&#x2F;0 1000 0010 &#x2F;7B8</p>
+<p>分别对应2-9-9-12为：0            0x8               0x82        0x7B8</p>
+<p>在windbg中查找记事本进程CR3：</p>
+<p><img src="/2023/04/11/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A16%E3%80%812-9-9-12%E5%88%86%E9%A1%B5/7.PNG"></p>
+<p>查找过程如下：</p>
+<p><img src="/2023/04/11/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A16%E3%80%812-9-9-12%E5%88%86%E9%A1%B5/8.PNG"></p>
+<h1 id="课后练习"><a href="#课后练习" class="headerlink" title="课后练习"></a>课后练习</h1><p><strong>问题：</strong></p>
+<ol>
+<li>给0线性地址挂上物理页</li>
+<li>修改页属性，实现应用层读写高2G内存地址</li>
+<li>逆向分析MmlsAddressValid()函数，找到PAE分页模式下页目录表、页表的基址</li>
+<li>编写代码实现第二题</li>
+</ol>
+<p><strong>答案：</strong></p>
+<p>一、代码如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;stdafx.h&quot;</span></span></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">(<span class="type">int</span> argc, <span class="type">char</span>* argv[])</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="type">int</span> temp = <span class="number">0x66666666</span>;</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;临时变量的地址为:%p\n&quot;</span>, &amp;temp);</span><br><span class="line">	<span class="type">int</span>* p = <span class="number">0</span>;</span><br><span class="line">	*p = <span class="number">0x12345678</span>;</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;0地址的值为:%x\n&quot;</span>, *p);</span><br><span class="line">	getchar();</span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><img src="/2023/04/11/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A16%E3%80%812-9-9-12%E5%88%86%E9%A1%B5/9.PNG"></p>
+<p>我们使用临时变量的地址 0x0012FF7C 对应的PTE，赋值给0地址对应的PTE即可。</p>
+<p>00&#x2F;00 0000 000&#x2F;1 0010 1111 F7C 对应2-9-9-12为0  0 12F  F7C。</p>
+<p>查看该地址对应的PTE：</p>
+<p><img src="/2023/04/11/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A16%E3%80%812-9-9-12%E5%88%86%E9%A1%B5/10.PNG"></p>
+<p>我们需要的PTE即为00000000&#96;160c3886，赋值给0地址对应的PTE：</p>
+<p><img src="/2023/04/11/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A16%E3%80%812-9-9-12%E5%88%86%E9%A1%B5/11.PNG"></p>
+<p><img src="/2023/04/11/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A16%E3%80%812-9-9-12%E5%88%86%E9%A1%B5/12.PNG"></p>
+<p>成功给0地址挂上物理页，并能够读写。</p>
+<p>二、代码如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;stdafx.h&quot;</span></span></span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">(<span class="type">int</span> argc, <span class="type">char</span>* argv[])</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="type">int</span>* addr = (<span class="type">int</span>*)<span class="number">0x8003f00c</span>;</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;该高2G地址的值为:%x\n&quot;</span>, *addr);</span><br><span class="line">	getchar();</span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>获取 8003f00c 地址对应的PDE和PTE，修改U&#x2F;S位的属性为1即可。</p>
+<p>1000 0000 0000 0011 1111 00C  对应2-9-9-12为2     0    3f   00C</p>
+<p>使用windbg修改U&#x2F;S位：</p>
+<p><img src="/2023/04/11/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A16%E3%80%812-9-9-12%E5%88%86%E9%A1%B5/13.PNG"></p>
+<p>这里我一开始仅仅修改了PDE和PTE的U&#x2F;S位为1，但是却还是无法读取这个地址的内容。查了一下资料才发现还应该修改PTE的G位。因为当PTE的G位为1时，代表这个小页是全局页，已经缓存在了TLB中，即便现在修改了U&#x2F;S属性，程序使用的还是之前的属性。</p>
+<p>那么为什么PDE的G位不用管呢（虽然我也顺便修改了）？因为只有当PDE的PS&#x3D;1（大页）时，PDE的G位才生效，对应的是大页为全局页。</p>
+<p><img src="/2023/04/11/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A16%E3%80%812-9-9-12%E5%88%86%E9%A1%B5/14.PNG"></p>
+<p><img src="/2023/04/11/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A16%E3%80%812-9-9-12%E5%88%86%E9%A1%B5/15.PNG"></p>
+<p>在修改了PDE和PTE的U&#x2F;S位、PTE的G位后，成功读取了高2G的内容。</p>
+<p>三、与10-10-12模式下思路类似，只是一些基址发生了变化。注意要分析的文件为ntkrnlpa.exe</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br></pre></td><td class="code"><pre><span class="line">.text:00439980 var_8           = dword ptr -8</span><br><span class="line">.text:00439980 var_4           = dword ptr -4</span><br><span class="line">.text:00439980 VirtualAddress  = dword ptr  8</span><br><span class="line">.text:00439980</span><br><span class="line">.text:00439980                 mov     edi, edi</span><br><span class="line">.text:00439982                 push    ebp</span><br><span class="line">.text:00439983                 mov     ebp, esp</span><br><span class="line">.text:00439985                 push    ecx</span><br><span class="line">.text:00439986                 push    ecx</span><br><span class="line">.text:00439987                 mov     ecx, [ebp+VirtualAddress] ; ecx = 虚拟地址</span><br><span class="line">.text:0043998A                 push    esi</span><br><span class="line">.text:0043998B                 mov     eax, ecx        ; eax = 虚拟地址</span><br><span class="line">.text:0043998D                 shr     eax, 12h        ; 虚拟地址右移18位</span><br><span class="line">.text:00439990                 mov     esi, 3FF8h</span><br><span class="line">.text:00439995                 and     eax, esi        ; 保留PDI并左移3位，相当于PDI*8，并且保留了2位的那个值并且乘以了4096，相当于找到了第几个PDT，由此可见在虚拟地址中，这4个PDT是连起来的</span><br><span class="line">.text:00439997                 sub     eax, 3FA00000h  ; 第一张PDT虚拟地址为0xC0600000，eax为PDE的地址</span><br><span class="line">.text:0043999C                 mov     edx, [eax]</span><br><span class="line">.text:0043999E                 mov     eax, [eax+4]    ; eax`edx为该虚拟地址对应的PDE</span><br><span class="line">.text:004399A1                 mov     [ebp+var_4], eax ; var4为该虚拟地址的PDE高4字节</span><br><span class="line">.text:004399A4                 mov     eax, edx        ; eax为该虚拟地址的PDE的低4字节</span><br><span class="line">.text:004399A6                 push    edi</span><br><span class="line">.text:004399A7                 and     eax, 1          ; 取PDE的P位</span><br><span class="line">.text:004399AA                 xor     edi, edi</span><br><span class="line">.text:004399AC                 or      eax, edi</span><br><span class="line">.text:004399AE                 jz      short loc_439A11 ; 如果PDE的P位为0，则跳转，返回假</span><br><span class="line">.text:004399B0                 mov     edi, 80h</span><br><span class="line">.text:004399B5                 and     edx, edi        ; 取PDE的PS位</span><br><span class="line">.text:004399B7                 push    0</span><br><span class="line">.text:004399B9                 mov     [ebp+var_8], edx</span><br><span class="line">.text:004399BC                 pop     eax</span><br><span class="line">.text:004399BD                 jz      short loc_4399C3 ; PS = 0跳转到小页处理</span><br><span class="line">.text:004399BF                 test    eax, eax</span><br><span class="line">.text:004399C1                 jz      short loc_439A15 ; PS = 1，大页，跳转到结束，返回1</span><br><span class="line">.text:004399C3</span><br><span class="line">.text:004399C3 loc_4399C3:                             ; CODE XREF: MmIsAddressValid(x)+3D↑j</span><br><span class="line">.text:004399C3                 shr     ecx, 9          ; 虚拟地址右移9位，也就是先右移12位（去掉虚拟地址中的页内偏移部分），然后乘以8</span><br><span class="line">.text:004399C6                 and     ecx, 7FFFF8h</span><br><span class="line">.text:004399CC                 mov     eax, [ecx-3FFFFFFCh] ; eax = [ecx + C0000000 + 4],eax为PTE高4字节</span><br><span class="line">.text:004399D2                 sub     ecx, 40000000h</span><br><span class="line">.text:004399D8                 mov     edx, [ecx]      ; edx为PTE低4字节</span><br><span class="line">.text:004399DA                 mov     [ebp+var_4], eax ; 将PTE高4字节先保存起来</span><br><span class="line">.text:004399DD                 push    ebx</span><br><span class="line">.text:004399DE                 mov     eax, edx</span><br><span class="line">.text:004399E0                 xor     ebx, ebx</span><br><span class="line">.text:004399E2                 and     eax, 1          ; 判断PTE的P位</span><br><span class="line">.text:004399E5                 or      eax, ebx</span><br><span class="line">.text:004399E7                 pop     ebx</span><br><span class="line">.text:004399E8                 jz      short loc_439A11 ; P位为0，返回假</span><br><span class="line">.text:004399EA                 and     edx, edi        ; 前面已经给edi赋值为80h，此处即为取PTE的PAT位</span><br><span class="line">.text:004399EC                 push    0</span><br><span class="line">.text:004399EE                 mov     [ebp+var_8], edx</span><br><span class="line">.text:004399F1                 pop     eax</span><br><span class="line">.text:004399F2                 jz      short loc_439A15</span><br><span class="line">.text:004399F4                 test    eax, eax</span><br><span class="line">.text:004399F6                 jnz     short loc_439A15</span><br><span class="line">.text:004399F8                 and     ecx, esi</span><br><span class="line">.text:004399FA                 mov     ecx, [ecx-3FA00000h]</span><br><span class="line">.text:00439A00                 mov     eax, 81h</span><br><span class="line">.text:00439A05                 and     ecx, eax</span><br><span class="line">.text:00439A07                 xor     edx, edx</span><br><span class="line">.text:00439A09                 cmp     ecx, eax</span><br><span class="line">.text:00439A0B                 jnz     short loc_439A15</span><br><span class="line">.text:00439A0D                 test    edx, edx</span><br><span class="line">.text:00439A0F                 jnz     short loc_439A15</span><br><span class="line">.text:00439A11</span><br><span class="line">.text:00439A11 loc_439A11:                             ; CODE XREF: MmIsAddressValid(x)+2E↑j</span><br><span class="line">.text:00439A11                                         ; MmIsAddressValid(x)+68↑j</span><br><span class="line">.text:00439A11                 xor     al, al</span><br><span class="line">.text:00439A13                 jmp     short loc_439A17</span><br><span class="line">.text:00439A15 ; ---------------------------------------------------------------------------</span><br><span class="line">.text:00439A15</span><br><span class="line">.text:00439A15 loc_439A15:                             ; CODE XREF: MmIsAddressValid(x)+41↑j</span><br><span class="line">.text:00439A15                                         ; MmIsAddressValid(x)+72↑j ...</span><br><span class="line">.text:00439A15                 mov     al, 1</span><br><span class="line">.text:00439A17</span><br><span class="line">.text:00439A17 loc_439A17:                             ; CODE XREF: MmIsAddressValid(x)+93↑j</span><br><span class="line">.text:00439A17                 pop     edi</span><br><span class="line">.text:00439A18                 pop     esi</span><br><span class="line">.text:00439A19                 leave</span><br><span class="line">.text:00439A1A                 retn    4</span><br><span class="line">.text:00439A1A __stdcall MmIsAddressValid(x) endp</span><br></pre></td></tr></table></figure>
+
+<p>从上面的分析可以看出，第一张PTT表基址仍然是 0xC0000000，后面的PTT紧挨着分布。直到地址0xC0600000，遇到第一张PDT表，后面连着三张都是PDT表。</p>
+<p>这里可以总结一下PAE模式下获取PDE与PTE的公式：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">pPDE = 0xC0600000 + ((addr&gt;&gt;18) &amp; 0x3FF8)</span><br><span class="line">pPTE = 0xC0000000 + ((addr&gt;&gt;9) &amp; 0x7FFFF8)</span><br></pre></td></tr></table></figure>
+
+<p>四、代码如下：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&quot;stdafx.h&quot;</span></span></span><br><span class="line"><span class="meta">#<span class="keyword">include</span> <span class="string">&lt;Windows.h&gt;</span></span></span><br><span class="line"><span class="comment">//该函数用于通过有参调用门提权后修改地址对应物理页的属性</span></span><br><span class="line"><span class="comment">//将PDE和PTE的U/S位置1，PTE的G位置0</span></span><br><span class="line"><span class="comment">//PDE和PTE的寻址方式参考MmIsAddressValid函数</span></span><br><span class="line"><span class="type">void</span> _declspec(naked) ModifyMemoryPageAttr()</span><br><span class="line">&#123;</span><br><span class="line">	_asm</span><br><span class="line">	&#123;</span><br><span class="line">		pushad</span><br><span class="line">		pushfd</span><br><span class="line"></span><br><span class="line">		mov ecx,[esp + <span class="number">0x24</span> + <span class="number">0x8</span>]</span><br><span class="line">		mov eax,ecx</span><br><span class="line">		shr eax,<span class="number">12</span>h</span><br><span class="line">		and eax,<span class="number">3f</span>f8h</span><br><span class="line">		sub eax,<span class="number">3f</span>a00000h</span><br><span class="line">		mov ebx,eax</span><br><span class="line">		mov eax,[eax]</span><br><span class="line">		or eax,<span class="number">4</span></span><br><span class="line">		and ah,<span class="number">0f</span>eh</span><br><span class="line">		mov [ebx],eax</span><br><span class="line"></span><br><span class="line">		shr ecx,<span class="number">9</span></span><br><span class="line">		and ecx,<span class="number">7f</span>fff8h</span><br><span class="line">		sub ecx,<span class="number">40000000</span>h</span><br><span class="line">		mov edx,ecx</span><br><span class="line">		mov ecx,[ecx]</span><br><span class="line">		or ecx,<span class="number">4</span></span><br><span class="line">		and ch,<span class="number">0f</span>eh</span><br><span class="line">		mov [edx],ecx</span><br><span class="line"></span><br><span class="line">		popfd</span><br><span class="line">		popad</span><br><span class="line">		retf <span class="number">4</span></span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"><span class="type">int</span> <span class="title function_">main</span><span class="params">(<span class="type">int</span> argc, <span class="type">char</span>* argv[])</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="type">int</span>* addr = (<span class="type">int</span>*)<span class="number">0x8003f00c</span>;</span><br><span class="line">	<span class="type">char</span> buff[] = &#123; <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0x48</span>, <span class="number">0</span> &#125;;</span><br><span class="line">	_asm</span><br><span class="line">	&#123;</span><br><span class="line">		push addr</span><br><span class="line">		call fword ptr[buff]</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;haha\n&quot;</span>);</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;该高2G地址的值为:%x\n&quot;</span>, *addr);</span><br><span class="line">	getchar();</span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>在windbg中构造调用门eq 8003f048 0040ec01&#96;00081020，具体由ModifyMemoryPageAttr函数的偏移决定。执行结果如下：</p>
+<p><img src="/2023/04/11/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A16%E3%80%812-9-9-12%E5%88%86%E9%A1%B5/17.PNG"></p>
+
     </div>
 
     
@@ -312,7 +423,10 @@
     <a href="/2023/03/27/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A15%E3%80%81PDT-PTT%E5%9F%BA%E5%9D%80/" rel="prev" title="保护模式：15、PDE_PTE基址">
       <i class="fa fa-chevron-left"></i> 保护模式：15、PDE_PTE基址
     </a></div>
-      <div class="post-nav-item"></div>
+      <div class="post-nav-item">
+    <a href="/2023/04/19/%E4%BF%9D%E6%8A%A4%E6%A8%A1%E5%BC%8F%EF%BC%9A17%E3%80%81TLB/" rel="next" title="保护模式：17、TLB">
+      保护模式：17、TLB <i class="fa fa-chevron-right"></i>
+    </a></div>
     </div>
       </footer>
     
@@ -371,6 +485,7 @@
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%A6%82%E4%BD%95%E6%89%A9%E5%A4%A7%E7%89%A9%E7%90%86%E5%86%85%E5%AD%98%E5%AF%BB%E5%9D%80"><span class="nav-number">1.</span> <span class="nav-text">如何扩大物理内存寻址</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E7%BB%93%E6%9E%84%E8%A7%A3%E6%9E%90"><span class="nav-number">2.</span> <span class="nav-text">结构解析</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%AF%BE%E5%A0%82%E7%BB%83%E4%B9%A0"><span class="nav-number">3.</span> <span class="nav-text">课堂练习</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E8%AF%BE%E5%90%8E%E7%BB%83%E4%B9%A0"><span class="nav-number">4.</span> <span class="nav-text">课后练习</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
@@ -386,7 +501,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">33</span>
+          <span class="site-state-item-count">34</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
